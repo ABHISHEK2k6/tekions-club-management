@@ -49,13 +49,25 @@ model User {
   image            String?
   name             String?          @unique
   phone            String?
+  studentId        String?          @unique
+  department       String?
+  year             String?
+  bio              String?
+  points           Int              @default(0)
+  
   accounts         Account[]
-  addresses        addresses[]
-  cart_items       cart_items[]
-  orders           orders[]
   sessions         Session[]
-  wishlist_items   wishlist_items[]
-
+  
+  // Club relationships
+  ownedClubs       Club[]           @relation("ClubOwner")
+  clubMemberships  ClubMember[]
+  membershipRequests MembershipRequest[]
+  eventRegistrations EventRegistration[]
+  announcements    Announcement[]
+  
+  // Address relationship
+  addresses        Address[]
+  
   @@map("users")
 }
 
@@ -80,131 +92,132 @@ model PendingUser {
   @@map("pending_users")
 }
 
-model addresses {
-  id                                         String   @id
-  userId                                     String
-  name                                       String
-  street                                     String
-  city                                       String
-  state                                      String
-  zipCode                                    String
-  country                                    String
-  isDefault                                  Boolean  @default(false)
-  createdAt                                  DateTime @default(now())
-  updatedAt                                  DateTime
-  users                                      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  orders_orders_billingAddressIdToaddresses  orders[] @relation("orders_billingAddressIdToaddresses")
-  orders_orders_shippingAddressIdToaddresses orders[] @relation("orders_shippingAddressIdToaddresses")
-}
-
-model cart_items {
-  id        String   @id
-  userId    String
-  productId Int
-  variantId Int?     @map("variant_id") // Reference to product_variants
-  quantity  Int      @default(1)
-  color     String   // Standardized color name
-  size      String
-  name      String
-  price     Float
-  image     String
-  type      String
-  sku       String?  // Original Qikink SKU from variant
-  createdAt DateTime @default(now())
-  updatedAt DateTime
-  products  products @relation(fields: [productId], references: [id])
-  users     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  variant   product_variants? @relation(fields: [variantId], references: [id])
-
-  @@unique([userId, productId, variantId]) // Use variantId for uniqueness
-}
-
-model order_items {
-  id        String   @id
-  orderId   String
-  productId Int
-  name      String
-  price     Float
-  quantity  Int
-  color     String
-  size      String
-  image     String
-  type      String
-  orders    orders   @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  products  products @relation(fields: [productId], references: [id])
-}
-
-model orders {
-  id                                            String        @id
-  userId                                        String
-  orderNumber                                   String        @unique
-  status                                        String        @default("pending")
-  total                                         Float
-  shippingFee                                   Float         @default(0)
-  tax                                           Float         @default(0)
-  shippingAddressId                             String?
-  billingAddressId                              String?
-  paymentMethod                                 String?
-  paymentStatus                                 String        @default("pending")
-  notes                                         String?
-  createdAt                                     DateTime      @default(now())
-  updatedAt                                     DateTime
-  order_items                                   order_items[]
-  addresses_orders_billingAddressIdToaddresses  addresses?    @relation("orders_billingAddressIdToaddresses", fields: [billingAddressId], references: [id])
-  addresses_orders_shippingAddressIdToaddresses addresses?    @relation("orders_shippingAddressIdToaddresses", fields: [shippingAddressId], references: [id])
-  users                                         User          @relation(fields: [userId], references: [id])
-}
-
-model products {
-  id             Int              @id @default(autoincrement())
-  name           String
-  price          Float            // Base price (can be overridden by variants)
-  description    String?
-  images         String[]
-  colors         Json?            // Keep for backward compatibility, will be deprecated
-  sizes          String[]
-  type           String
-  category       String
-  sku            String?          // Base SKU (can be overridden by variants)
-  isNew          Boolean          @default(false)
-  isBestseller   Boolean          @default(false)
-  rating         Float            @default(0)
-  reviews        Int              @default(0)
-  createdAt      DateTime         @default(now())
-  updatedAt      DateTime         @updatedAt
-  cart_items     cart_items[]
-  order_items    order_items[]
-  wishlist_items wishlist_items[]
-  variants       product_variants[] // One-to-many relationship with variants
-}
-
-model product_variants {
-  id             Int      @id @default(autoincrement())
-  productId      Int      @map("product_id")
-  colorName      String   @map("color_name") // e.g., "White", "Light Baby Pink"
-  colorValue     String   @map("color_value") // Hex color code for display
-  sku            String   @unique // Original Qikink SKU - DO NOT MODIFY
-  price          Float?   // Optional: if this color has different price
-  stockQuantity  Int      @default(0) @map("stock_quantity")
-  isAvailable    Boolean  @default(true) @map("is_available")
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @updatedAt @map("updated_at")
+model Club {
+  id              String   @id @default(cuid())
+  name            String   @unique
+  description     String?
+  logo            String?
+  category        String
+  isPublic        Boolean  @default(true)
+  maxMembers      Int?
+  tags            String[] @default([])
+  requirements    String?
+  meetingSchedule String?
+  contactEmail    String?
+  socialLinks     Json?    // Store social links as JSON
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
   
-  // Relations
-  product        products @relation(fields: [productId], references: [id], onDelete: Cascade)
-  cart_items     cart_items[]
+  ownerId     String
+  owner       User     @relation("ClubOwner", fields: [ownerId], references: [id], onDelete: Cascade)
   
-  @@map("product_variants")
-  @@unique([productId, colorName]) // Prevent duplicate colors for same product
+  members     ClubMember[]
+  events      Event[]
+  announcements Announcement[]
+  membershipRequests MembershipRequest[]
+  
+  @@map("clubs")
 }
 
-model wishlist_items {
-  id        String   @id
-  userId    String
-  productId Int
-  createdAt DateTime @default(now())
-  products  products @relation(fields: [productId], references: [id])
-  users     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+model ClubMember {
+  id       String   @id @default(cuid())
+  role     String   @default("member") // member, admin, moderator
+  joinedAt DateTime @default(now())
+  
+  clubId   String
+  club     Club     @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  
+  userId   String
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([clubId, userId])
+  @@map("club_members")
+}
 
-  @@unique([userId, productId])
+model Event {
+  id              String   @id @default(cuid())
+  title           String
+  description     String?
+  date            DateTime
+  venue           String
+  maxParticipants Int?
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  clubId          String
+  club            Club     @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  
+  registrations   EventRegistration[]
+  
+  @@map("events")
+}
+
+model EventRegistration {
+  id           String   @id @default(cuid())
+  registeredAt DateTime @default(now())
+  attended     Boolean  @default(false)
+  
+  eventId      String
+  event        Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([eventId, userId])
+  @@map("event_registrations")
+}
+
+model Announcement {
+  id        String   @id @default(cuid())
+  title     String
+  content   String
+  priority  String   @default("normal") // low, normal, high, urgent
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  clubId    String
+  club      Club     @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  
+  @@map("announcements")
+}
+
+model MembershipRequest {
+  id        String   @id @default(cuid())
+  status    String   @default("pending") // pending, approved, rejected
+  message   String?  // Optional message from the user
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  clubId    String
+  club      Club     @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([clubId, userId])
+  @@map("membership_requests")
+}
+
+model Address {
+  id          String   @id @default(cuid())
+  label       String   // e.g., "Home", "Dorm", "Work"
+  street      String
+  city        String
+  state       String
+  zipCode     String
+  country     String   @default("US")
+  isDefault   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("addresses")
 }

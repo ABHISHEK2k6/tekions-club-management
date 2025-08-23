@@ -54,7 +54,7 @@ const SignInContent = () => {
           className="mb-6 text-center"
         >
           <h1 className="text-2xl font-bold">Welcome Back</h1>
-          <p className="text-muted-foreground mt-2">Sign in to your NanoDrip account</p>
+          <p className="text-muted-foreground mt-2">Sign in to your Tekions account</p>
         </motion.div>
         
         {error && (

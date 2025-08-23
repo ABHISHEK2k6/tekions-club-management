@@ -1,514 +1,301 @@
-"use client";
+'use client';
 
-import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
-import { 
-  ShoppingBag, 
-  Heart, 
-  Package, 
-  Settings, 
-  User, 
-  CreditCard, 
-  MapPin, 
-  Bell,
-  LogOut,
-  RefreshCw
-} from 'lucide-react';
-import { useSession, signOut } from 'next-auth/react';
-import Header from '@/components/header';
-import Footer from '@/components/footer';
+import { useSession } from 'next-auth/react';
+import { redirect } from 'next/navigation';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useCartStore } from '@/lib/cart-store';
-import { useOrders } from '@/hooks/use-orders';
-import { toast } from 'sonner';
-import Image from 'next/image';
+import PortalNavbar from '@/components/portal-navbar';
+import { 
+  Users, 
+  Calendar, 
+  TrendingUp, 
+  Bell, 
+  Star,
+  MapPin,
+  Clock,
+  UserPlus
+} from 'lucide-react';
+import Link from 'next/link';
 
-export default function Dashboard() {
+const DashboardPage = () => {
   const { data: session, status } = useSession();
-  const router = useRouter();
-  const { items, getTotalItems, getTotalPrice } = useCartStore();
-  const { orders, loading: ordersLoading, error: ordersError, refetch: refetchOrders } = useOrders();
-  const [mounted, setMounted] = useState(false);
 
+  // Set page title
   useEffect(() => {
-    setMounted(true);
-    
-    // Redirect if not authenticated
-    if (mounted && status === 'unauthenticated') {
-      router.push('/signin');
-    }
-  }, [mounted, status, router]);
+    document.title = 'Dashboard - Tekions Club Management Portal';
+  }, []);
 
-  if (!mounted || status === 'loading') {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
-      </div>
-    );
+  if (status === 'loading') {
+    return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
   }
-  
-  // Use NextAuth session data
-  const userData = session?.user ? { 
-    name: session.user.name || 'User', 
-    email: session.user.email || 'No email',
-    image: session.user.image || 'https://via.placeholder.com/150'
-  } : { 
-    name: "Guest User", 
-    email: "Not signed in", 
-    image: "https://via.placeholder.com/150" 
+
+  if (!session) {
+    redirect('/sign-in');
+  }
+
+  // Mock data - replace with real data from API
+  const userStats = {
+    joinedClubs: 3,
+    upcomingEvents: 5,
+    points: 150,
+    rank: 12
   };
 
-  const wishlistItems = [
+  const upcomingEvents = [
     {
       id: 1,
-      name: 'Premium Oversized Hoodie',
-      price: 99.99,
-      image: 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=400&fit=crop',
+      title: "Tech Talk: AI in Education",
+      club: "Computer Science Club",
+      date: "2025-08-25",
+      time: "14:00",
+      venue: "Auditorium A",
+      attendees: 45
     },
     {
       id: 2,
-      name: 'Vintage Washed Hoodie',
-      price: 79.99,
-      image: 'https://images.unsplash.com/photo-1564557287817-3785e38ec1f5?w=400&h=400&fit=crop',
+      title: "Cultural Night Planning",
+      club: "Cultural Society",
+      date: "2025-08-26",
+      time: "16:30",
+      venue: "Room 201",
+      attendees: 12
     },
+    {
+      id: 3,
+      title: "Photography Workshop",
+      club: "Photography Club",
+      date: "2025-08-28",
+      time: "10:00",
+      venue: "Studio B",
+      attendees: 20
+    }
   ];
 
-  // Helper function to format order status
-  const getStatusBadgeVariant = (status: string) => {
-    const statusLower = status.toLowerCase();
-    if (statusLower.includes('delivered') || statusLower.includes('completed')) {
-      return 'default';
-    } else if (statusLower.includes('shipped') || statusLower.includes('dispatch')) {
-      return 'secondary';
-    } else if (statusLower.includes('processing') || statusLower.includes('pending')) {
-      return 'outline';
+  const recentAnnouncements = [
+    {
+      id: 1,
+      title: "Annual Sports Day Registration Open",
+      club: "Sports Committee",
+      priority: "high",
+      time: "2 hours ago"
+    },
+    {
+      id: 2,
+      title: "New Workshop on Web Development",
+      club: "Tech Club",
+      priority: "normal",
+      time: "5 hours ago"
+    },
+    {
+      id: 3,
+      title: "Cultural Week Planning Meeting",
+      club: "Cultural Society",
+      priority: "normal",
+      time: "1 day ago"
     }
-    return 'outline';
-  };
+  ];
 
-  // Helper function to format date
-  const formatDate = (dateString: string) => {
-    try {
-      return new Date(dateString).toLocaleDateString();
-    } catch {
-      return dateString;
+  const myClubs = [
+    {
+      id: 1,
+      name: "Computer Science Club",
+      role: "Member",
+      members: 120,
+      category: "Academic"
+    },
+    {
+      id: 2,
+      name: "Photography Club",
+      role: "Admin",
+      members: 45,
+      category: "Creative"
+    },
+    {
+      id: 3,
+      name: "Debate Society",
+      role: "Member",
+      members: 80,
+      category: "Academic"
     }
-  };
+  ];
 
   return (
-    <motion.main
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.6 }}
-      className="min-h-screen bg-background"
-    >
-      <Header />
+    <div className="min-h-screen bg-gray-50">
+      <PortalNavbar />
       
-      <div className="container mx-auto px-4 pt-24 pb-16">
-        {/* Header Section */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="mb-8"
-        >
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div>
-              <h1 className="text-3xl md:text-4xl font-bold mb-2">
-                Welcome back, {userData.name?.split(' ')[0]}!
-              </h1>
-              <p className="text-muted-foreground">
-                Manage your orders, wishlist, and account settings
-              </p>
-            </div>
-            <Button 
-              variant="outline" 
-              onClick={() => signOut({ callbackUrl: '/' })}
-            >
-              <LogOut className="w-4 h-4 mr-2" />
-              Sign Out
-            </Button>
-          </div>
-        </motion.div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Welcome Section */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900">
+            Welcome back, {session.user?.name}!
+          </h1>
+          <p className="text-gray-600 mt-2">
+            Here's what's happening in your clubs today.
+          </p>
+        </div>
 
-        {/* Quick Stats */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.1 }}
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8"
-        >
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center gap-4">
-                <div className="p-2 bg-primary/10 rounded-lg">
-                  <ShoppingBag className="w-6 h-6 text-primary" />
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Cart Items</p>
-                  <p className="text-2xl font-bold">{getTotalItems()}</p>
-                </div>
-              </div>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Joined Clubs</CardTitle>
+              <Users className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{userStats.joinedClubs}</div>
+              <p className="text-xs text-muted-foreground">Active memberships</p>
             </CardContent>
           </Card>
-          
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center gap-4">
-                <div className="p-2 bg-green-100 dark:bg-green-900 rounded-lg">
-                  <Package className="w-6 h-6 text-green-600 dark:text-green-400" />
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Total Orders</p>
-                  <p className="text-2xl font-bold">{orders.length}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center gap-4">
-                <div className="p-2 bg-red-100 dark:bg-red-900 rounded-lg">
-                  <Heart className="w-6 h-6 text-red-600 dark:text-red-400" />
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Wishlist</p>
-                  <p className="text-2xl font-bold">{wishlistItems.length}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center gap-4">
-                <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
-                  <CreditCard className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Cart Value</p>
-                  <p className="text-2xl font-bold">${getTotalPrice().toFixed(2)}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
 
-        {/* Main Content */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.2 }}
-        >
-          <Tabs defaultValue="orders" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-2 lg:grid-cols-5">
-              <TabsTrigger value="orders">Orders</TabsTrigger>
-              <TabsTrigger value="cart">Cart</TabsTrigger>
-              <TabsTrigger value="wishlist">Wishlist</TabsTrigger>
-              <TabsTrigger value="profile">Profile</TabsTrigger>
-              <TabsTrigger value="settings">Settings</TabsTrigger>
-            </TabsList>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Upcoming Events</CardTitle>
+              <Calendar className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{userStats.upcomingEvents}</div>
+              <p className="text-xs text-muted-foreground">This week</p>
+            </CardContent>
+          </Card>
 
-            {/* Orders Tab */}
-            <TabsContent value="orders" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Package className="w-5 h-5" />
-                      Order History
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Points</CardTitle>
+              <Star className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{userStats.points}</div>
+              <p className="text-xs text-muted-foreground">Total earned</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Leaderboard Rank</CardTitle>
+              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">#{userStats.rank}</div>
+              <p className="text-xs text-muted-foreground">Campus ranking</p>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Upcoming Events */}
+          <div className="lg:col-span-2">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Calendar className="h-5 w-5" />
+                  Upcoming Events
+                </CardTitle>
+                <CardDescription>
+                  Events you're registered for
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {upcomingEvents.map((event) => (
+                  <div key={event.id} className="flex items-center justify-between p-4 border rounded-lg">
+                    <div className="flex-1">
+                      <h4 className="font-semibold text-gray-900">{event.title}</h4>
+                      <p className="text-sm text-gray-600">{event.club}</p>
+                      <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
+                        <span className="flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          {event.date} at {event.time}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <MapPin className="h-3 w-3" />
+                          {event.venue}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <UserPlus className="h-3 w-3" />
+                          {event.attendees} attending
+                        </span>
+                      </div>
                     </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={refetchOrders}
-                      disabled={ordersLoading}
-                    >
-                      <RefreshCw className={`w-4 h-4 mr-2 ${ordersLoading ? 'animate-spin' : ''}`} />
-                      Refresh
+                    <Button variant="outline" size="sm">
+                      View Details
                     </Button>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {ordersLoading ? (
-                    <div className="flex items-center justify-center py-8">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                      <span className="ml-2">Loading orders...</span>
-                    </div>
-                  ) : ordersError ? (
-                    <div className="text-center py-8">
-                      <Package className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-                      <p className="text-muted-foreground mb-2">Failed to load orders</p>
-                      <p className="text-sm text-red-500">{ordersError}</p>
-                      <Button 
-                        variant="outline" 
-                        className="mt-4"
-                        onClick={refetchOrders}
+                  </div>
+                ))}
+                <div className="pt-4">
+                  <Button variant="outline" className="w-full" asChild>
+                    <Link href="/events">View All Events</Link>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Sidebar */}
+          <div className="space-y-6">
+            {/* Recent Announcements */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Bell className="h-5 w-5" />
+                  Recent Announcements
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {recentAnnouncements.map((announcement) => (
+                  <div key={announcement.id} className="border-l-4 border-blue-500 pl-4">
+                    <h5 className="font-medium text-sm">{announcement.title}</h5>
+                    <p className="text-xs text-gray-600">{announcement.club}</p>
+                    <div className="flex items-center justify-between mt-1">
+                      <Badge 
+                        variant={announcement.priority === 'high' ? 'destructive' : 'secondary'}
+                        className="text-xs"
                       >
-                        Try Again
-                      </Button>
+                        {announcement.priority}
+                      </Badge>
+                      <span className="text-xs text-gray-500">{announcement.time}</span>
                     </div>
-                  ) : orders.length === 0 ? (
-                    <div className="text-center py-8">
-                      <Package className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-                      <p className="text-muted-foreground mb-2">No orders found</p>
-                      <p className="text-sm text-muted-foreground">Your orders will appear here once you make a purchase</p>
-                      <Button className="mt-4" onClick={() => router.push('/shop')}>
-                        Start Shopping
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      {orders.map((order) => (
-                        <div key={order.id || order.order_number} className="border rounded-lg p-4 space-y-3">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-4">
-                              <div>
-                                <p className="font-semibold">{order.order_number}</p>
-                                <p className="text-sm text-muted-foreground">
-                                  {formatDate(order.created_at)}
-                                </p>
-                              </div>
-                              <Badge variant={getStatusBadgeVariant(order.status)}>
-                                {order.status}
-                              </Badge>
-                            </div>
-                            <div className="text-right">
-                              <p className="font-semibold">${order.total_order_value}</p>
-                              <p className="text-sm text-muted-foreground">
-                                {order.line_items?.length || 0} items
-                              </p>
-                            </div>
-                          </div>
-                          
-                          {/* Shipping Address */}
-                          {order.shipping_address && (
-                            <div className="text-sm text-muted-foreground border-t pt-2">
-                              <p className="font-medium">Shipping to:</p>
-                              <p>
-                                {order.shipping_address.first_name} {order.shipping_address.last_name}
-                              </p>
-                              <p>{order.shipping_address.address1}</p>
-                              <p>
-                                {order.shipping_address.city}, {order.shipping_address.zip}
-                              </p>
-                            </div>
-                          )}
-                          
-                          {/* Order Items */}
-                          {order.line_items && order.line_items.length > 0 && (
-                            <div className="border-t pt-2">
-                              <p className="text-sm font-medium mb-2">Items:</p>
-                              <div className="space-y-2">
-                                {order.line_items.map((item, index) => (
-                                  <div key={index} className="flex items-center gap-3 text-sm">
-                                    {item.designs?.[0]?.mockup_link && (
-                                      <img
-                                        src={item.designs[0].mockup_link}
-                                        alt="Product"
-                                        className="w-10 h-10 object-cover rounded"
-                                        onError={(e) => {
-                                          (e.target as HTMLImageElement).style.display = 'none';
-                                        }}
-                                      />
-                                    )}
-                                    <div className="flex-1">
-                                      <p className="text-muted-foreground">
-                                        SKU: {item.sku} • Qty: {item.quantity}
-                                      </p>
-                                      <p className="font-medium">${item.price}</p>
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
+                  </div>
+                ))}
+                <Button variant="outline" size="sm" className="w-full mt-4" asChild>
+                  <Link href="/announcements">View All</Link>
+                </Button>
+              </CardContent>
+            </Card>
 
-            {/* Cart Tab */}
-            <TabsContent value="cart" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <ShoppingBag className="w-5 h-5" />
-                    Shopping Cart ({getTotalItems()} items)
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {items.length === 0 ? (
-                    <div className="text-center py-8">
-                      <ShoppingBag className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-                      <p className="text-muted-foreground">Your cart is empty</p>
-                      <Button className="mt-4" onClick={() => router.push('/shop')}>
-                        Start Shopping
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      {items.map((item) => (
-                        <div key={`${item.id}-${item.color}-${item.size}`} className="flex items-center gap-4 p-4 border rounded-lg">
-                          <img
-                            src={item.image}
-                            alt={item.name}
-                            className="w-16 h-16 object-cover rounded"
-                          />
-                          <div className="flex-1">
-                            <h3 className="font-semibold">{item.name}</h3>
-                            <p className="text-sm text-muted-foreground">
-                              {item.color} • {item.size}
-                            </p>
-                          </div>
-                          <p className="font-semibold">${item.price}</p>
-                        </div>
-                      ))}
-                      <div className="border-t pt-4">
-                        <div className="flex justify-between items-center">
-                          <span className="text-lg font-semibold">Total: ${getTotalPrice().toFixed(2)}</span>
-                          <Button>Proceed to Checkout</Button>
-                        </div>
+            {/* My Clubs */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Users className="h-5 w-5" />
+                  My Clubs
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {myClubs.map((club) => (
+                  <div key={club.id} className="flex items-center justify-between">
+                    <div>
+                      <h5 className="font-medium text-sm">{club.name}</h5>
+                      <div className="flex items-center gap-2 text-xs text-gray-600">
+                        <Badge variant="outline" className="text-xs">
+                          {club.role}
+                        </Badge>
+                        <span>{club.members} members</span>
+                        <span>• {club.category}</span>
                       </div>
                     </div>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            {/* Wishlist Tab */}
-            <TabsContent value="wishlist" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Heart className="w-5 h-5" />
-                    Wishlist ({wishlistItems.length} items)
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {wishlistItems.map((item) => (
-                      <div key={item.id} className="border rounded-lg p-4">
-                        <img
-                          src={item.image}
-                          alt={item.name}
-                          className="w-full h-48 object-cover rounded mb-4"
-                        />
-                        <h3 className="font-semibold mb-2">{item.name}</h3>
-                        <p className="text-lg font-bold mb-4">${item.price}</p>
-                        <Button className="w-full">Add to Cart</Button>
-                      </div>
-                    ))}
                   </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            {/* Profile Tab */}
-            <TabsContent value="profile" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <User className="w-5 h-5" />
-                    Profile Information
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-center gap-4">
-                    <img
-                      src={userData.image || '/default-avatar.png'}
-                      alt={userData.name || 'User'}
-                      className="w-16 h-16 rounded-full"
-                    />
-                    <div>
-                      <h3 className="text-lg font-semibold">{userData.name}</h3>
-                      <p className="text-muted-foreground">{userData.email}</p>
-                    </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-sm font-medium">Full Name</label>
-                      <p className="mt-1 p-2 border rounded">{userData.name}</p>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium">Email</label>
-                      <p className="mt-1 p-2 border rounded">{userData.email}</p>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium">Phone</label>
-                      <p className="mt-1 p-2 border rounded">+1 (555) 123-4567</p>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium">Member Since</label>
-                      <p className="mt-1 p-2 border rounded">January 2024</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            {/* Settings Tab */}
-            <TabsContent value="settings" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Settings className="w-5 h-5" />
-                    Account Settings
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="space-y-4">
-                    <h4 className="font-semibold flex items-center gap-2">
-                      <MapPin className="w-4 h-4" />
-                      Addresses
-                    </h4>
-                    <div className="p-4 border rounded-lg">
-                      <p className="font-medium">Default Shipping Address</p>
-                      <p className="text-sm text-muted-foreground">
-                        123 Main Street<br />
-                        New York, NY 10001<br />
-                        United States
-                      </p>
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-4">
-                    <h4 className="font-semibold flex items-center gap-2">
-                      <Bell className="w-4 h-4" />
-                      Notifications
-                    </h4>
-                    <div className="space-y-2">
-                      <label className="flex items-center gap-2">
-                        <input type="checkbox" defaultChecked />
-                        <span className="text-sm">Order updates</span>
-                      </label>
-                      <label className="flex items-center gap-2">
-                        <input type="checkbox" defaultChecked />
-                        <span className="text-sm">New product announcements</span>
-                      </label>
-                      <label className="flex items-center gap-2">
-                        <input type="checkbox" />
-                        <span className="text-sm">Marketing emails</span>
-                      </label>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
-        </motion.div>
+                ))}
+                <Button variant="outline" size="sm" className="w-full mt-4" asChild>
+                  <Link href="/clubs">Browse Clubs</Link>
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
       </div>
-
-      <Footer />
-    </motion.main>
+    </div>
   );
-}
+};
+
+export default DashboardPage;

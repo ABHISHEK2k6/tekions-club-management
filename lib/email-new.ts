@@ -63,7 +63,7 @@ export async function sendEmail({ to, subject, html }: EmailOptions): Promise<{ 
     
     // Prepare email options
     const mailOptions = {
-      from: `"NanoDrip Store" <${process.env.EMAIL_FROM || process.env.GMAIL_USER}>`,
+      from: `"Tekions" <${process.env.EMAIL_FROM || process.env.GMAIL_USER}>`,
       to,
       subject,
       html,
@@ -135,13 +135,13 @@ export async function sendPasswordResetEmail(email: string, resetUrl: string): P
       <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Reset Your Password - NanoDrip Store</title>
+        <title>Reset Your Password - Tekions</title>
       </head>
       <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f5f5f5;">
         <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
           <!-- Header -->
           <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px 30px; text-align: center;">
-            <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 600;">NanoDrip Store</h1>
+            <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 600;">Tekions</h1>
             <p style="color: #e0e7ff; margin: 10px 0 0 0; font-size: 16px;">Password Reset Request</p>
           </div>
           
@@ -150,7 +150,7 @@ export async function sendPasswordResetEmail(email: string, resetUrl: string): P
             <h2 style="color: #1f2937; margin: 0 0 20px 0; font-size: 24px;">Reset Your Password</h2>
             
             <p style="color: #4b5563; font-size: 16px; margin: 0 0 20px 0; line-height: 1.6;">
-              We received a request to reset your password for your NanoDrip Store account. If you didn't make this request, you can safely ignore this email.
+              We received a request to reset your password for your Tekions account. If you didn't make this request, you can safely ignore this email.
             </p>
             
             <p style="color: #4b5563; font-size: 16px; margin: 0 0 30px 0; line-height: 1.6;">
@@ -195,7 +195,7 @@ export async function sendPasswordResetEmail(email: string, resetUrl: string): P
           <!-- Footer -->
           <div style="background-color: #f9fafb; padding: 30px; text-align: center; border-top: 1px solid #e5e7eb;">
             <p style="color: #6b7280; font-size: 14px; margin: 0 0 10px 0;">
-              This email was sent by NanoDrip Store
+              This email was sent by Tekions
             </p>
             <p style="color: #9ca3af; font-size: 12px; margin: 0;">
               Please do not reply to this email. This mailbox is not monitored.
@@ -208,7 +208,7 @@ export async function sendPasswordResetEmail(email: string, resetUrl: string): P
 
   const result = await sendEmail({
     to: email,
-    subject: 'Reset Your Password - NanoDrip Store',
+    subject: 'Reset Your Password - Tekions',
     html,
   });
 

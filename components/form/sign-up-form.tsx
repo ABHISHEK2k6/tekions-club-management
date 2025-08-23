@@ -18,7 +18,7 @@ import GoogleSignInButton from '@/components/google-sign-in-button';
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/ui/use-toast";
 import { useState } from 'react';
-import { Check, X, Mail, ArrowRight } from 'lucide-react';
+import { Check, X, Mail, ArrowRight, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const FormSchema = z
@@ -42,6 +42,7 @@ const FormSchema = z
 
 const SignUpForm = () => {
   const [showVerificationMessage, setShowVerificationMessage] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
   const [password, setPassword] = useState('');
@@ -77,6 +78,7 @@ const SignUpForm = () => {
   );
 
   const onSubmit = async (values: z.infer<typeof FormSchema>) => {
+    setIsLoading(true);
     try {
       const response = await fetch('/api/user', {
         method: 'POST',
@@ -122,6 +124,8 @@ const SignUpForm = () => {
         description: "Something went wrong",
         variant: "destructive",
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -241,8 +245,15 @@ const SignUpForm = () => {
             )}
           />
         </div>
-        <Button className='w-full mt-6' type='submit'>
-          Sign up
+        <Button className='w-full mt-6' type='submit' disabled={isLoading}>
+          {isLoading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Creating Account...
+            </>
+          ) : (
+            'Sign up'
+          )}
         </Button>
       </form>
       <div className='mx-auto my-4 flex w-full items-center justify-evenly before:mr-4 before:block before:h-px before:flex-grow before:bg-stone-400 after:ml-4 after:block after:h-px after:flex-grow after:bg-stone-400'>

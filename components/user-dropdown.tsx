@@ -4,10 +4,9 @@ import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useSession, signOut } from 'next-auth/react'
-import { User, Package, ShoppingCart, LogOut, X } from 'lucide-react'
+import { User, LogOut, X } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
-import { useCartStore } from '@/lib/cart-store'
 import Link from 'next/link'
 
 interface UserDropdownProps {
@@ -20,7 +19,6 @@ export default function UserDropdown({ isHomepage, scrolled, getTextColor }: Use
   const { data: session } = useSession()
   const [isOpen, setIsOpen] = useState(false)
   const [mounted, setMounted] = useState(false)
-  const { getTotalItems } = useCartStore()
 
   useEffect(() => {
     setMounted(true)
@@ -37,18 +35,6 @@ export default function UserDropdown({ isHomepage, scrolled, getTextColor }: Use
       label: 'Profile',
       href: '/profile',
       description: 'Manage your account'
-    },
-    {
-      icon: Package,
-      label: 'Orders',
-      href: '/orders',
-      description: 'View order history'
-    },
-    {
-      icon: ShoppingCart,
-      label: `Cart (${getTotalItems()})`,
-      href: '/cart',
-      description: 'View cart items'
     }
   ]
 
@@ -195,7 +181,7 @@ export default function UserDropdown({ isHomepage, scrolled, getTextColor }: Use
               {/* Footer */}
               <div className="p-4 border-t mt-auto">
                 <p className="text-xs text-muted-foreground text-center">
-                  NanoDrip Store © 2025
+                  Tekions © 2025
                 </p>
               </div>
             </motion.div>

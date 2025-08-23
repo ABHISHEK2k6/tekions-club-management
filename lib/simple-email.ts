@@ -17,7 +17,7 @@ export const sendSimpleEmail = async (email: string, resetUrl: string) => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        service: 'NanoDrip Password Reset',
+        service: 'Tekions Password Reset',
         email: email,
         resetUrl: resetUrl,
         timestamp: new Date().toISOString()

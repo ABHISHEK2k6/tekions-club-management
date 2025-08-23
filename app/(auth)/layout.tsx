@@ -1,7 +1,6 @@
 "use client";
 
 import { motion } from 'framer-motion';
-import Header from '@/components/header';
 import { Card, CardContent } from '@/components/ui/card';
 import { useTheme } from 'next-themes';
 
@@ -14,7 +13,6 @@ const AuthLayout: React.FC<AuthLayoutProps> = ({ children }) => {
   
   return (
     <div className={`min-h-screen ${theme === 'dark' ? 'bg-black' : 'bg-gray-50'} flex flex-col`}>
-      <Header />
       <div className="flex-1 flex items-center justify-center py-16">
         <motion.div 
           initial={{ opacity: 0, y: 20 }}

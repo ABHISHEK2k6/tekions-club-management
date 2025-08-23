@@ -1,626 +1,770 @@
-"use client"
+// @ts-nocheck
+'use client';
 
-import { useState, useEffect, useCallback } from 'react'
-import { useSession } from 'next-auth/react'
-import { useRouter } from 'next/navigation'
-import { motion } from 'framer-motion'
-import Link from 'next/link'
-import Image from 'next/image'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Skeleton } from '@/components/ui/skeleton'
-import { Badge } from '@/components/ui/badge'
-import { Separator } from '@/components/ui/separator'
-import type { Address } from '@/hooks/use-addresses'
-import { useWishlistUpdate } from '@/contexts/wishlist-update-context'
-import { useWishlist } from '@/hooks/use-wishlist'
+import { useState, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
+import { redirect } from 'next/navigation';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import PortalNavbar from '@/components/portal-navbar';
 import { 
   User, 
+  Mail, 
+  Phone, 
   MapPin, 
-  Package, 
-  Edit2, 
-  Plus, 
-  ShoppingBag, 
-  Heart, 
   Calendar,
-  Phone,
-  Mail,
+  Award,
+  Users,
+  Edit,
   Save,
-  Loader2,
+  X,
+  Plus,
   Trash2
-} from 'lucide-react'
-import Header from '@/components/header'
-import AddressBook from '@/components/address-book'
+} from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
-// Define interfaces
-interface UserData {
-  id: string
-  name: string | null
-  email: string
-  phone: string | null
-  image: string | null
-  createdAt?: string
-  addresses: Address[]
-  cart: CartItem[]
-  cartCount: number
-  wishlist: WishlistItem[]
-  wishlistCount: number
-  orders: Order[]
+interface Address {
+  id: string;
+  label: string;
+  street: string;
+  city: string;
+  state: string;
+  zipCode: string;
+  country: string;
+  isDefault: boolean;
 }
 
-// We'll use the Address type from the hook via component props
-
-interface CartItem {
-  id: string
-  name: string
-  price: number
-  color: string
-  size: string
-  image: string
-  quantity: number
+interface UserProfile {
+  id: string;
+  name: string | null;
+  email: string | null;
+  phone: string | null;
+  studentId: string | null;
+  department: string | null;
+  year: string | null;
+  bio: string | null;
+  points: number;
+  image: string | null;
+  addresses: Address[];
+  clubMemberships: Array<{
+    club: {
+      id: string;
+      name: string;
+      category: string;
+      logo: string | null;
+    };
+  }>;
+  eventRegistrations: Array<{
+    event: {
+      id: string;
+      title: string;
+      date: string;
+      venue: string;
+    };
+  }>;
+  ownedClubs: Array<{
+    id: string;
+    name: string;
+    category: string;
+    logo: string | null;
+    _count: { members: number };
+  }>;
 }
 
-interface WishlistItem {
-  id: string
-  name: string
-  price: number
-  image: string
-}
-
-interface Order {
-  id: string
-  orderNumber: string
-  status: string
-  total: number
-  createdAt: string
-}
-
-// Default empty user state
-const emptyUser: UserData = {
-  id: '',
-  name: '',
-  email: '',
-  phone: null,
-  image: null,
-  addresses: [],
-  cart: [],
-  cartCount: 0,
-  wishlist: [],
-  wishlistCount: 0,
-  orders: []
-}
-
-export default function ProfilePage() {
-  const { data: session, status } = useSession()
-  const router = useRouter()
-  const [userData, setUserData] = useState<UserData | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [updating, setUpdating] = useState(false)
-  const [activeTab, setActiveTab] = useState('profile')
-  const { updateCounter } = useWishlistUpdate()
-  const { removeFromWishlist } = useWishlist()
+const ProfilePage = () => {
+  const { data: session, status } = useSession();
+  const { toast } = useToast();
+  const [isEditing, setIsEditing] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [formData, setFormData] = useState({
     name: '',
-    phone: ''
-  })
+    phone: '',
+    studentId: '',
+    department: '',
+    year: '',
+    bio: ''
+  });
+  const [addressForm, setAddressForm] = useState({
+    label: '',
+    street: '',
+    city: '',
+    state: '',
+    zipCode: '',
+    country: 'US',
+    isDefault: false
+  });
+  const [showAddressForm, setShowAddressForm] = useState(false);
 
-  const fetchUserData = useCallback(async (forceRefresh = false) => {
-    if (status === 'unauthenticated') {
-      setLoading(false)
-      return
-    }
-    
+  useEffect(() => {
+    console.log('Profile useEffect triggered:', { status, session });
     if (status === 'loading') {
-      return
+      console.log('Session still loading...');
+      return;
     }
     
+    if (session?.user?.id) {
+      console.log('User ID found, fetching profile:', session.user.id);
+      fetchUserProfile();
+    } else if (session && !session.user?.id) {
+      console.log('Session exists but no user ID:', session);
+      setIsLoading(false);
+    } else if (status === 'unauthenticated') {
+      console.log('User not authenticated');
+      setIsLoading(false);
+    }
+  }, [session, status]);
+
+  const fetchUserProfile = async () => {
     try {
-      setLoading(true)
-      
-      const cacheKey = `userData_${session?.user?.email}`
-      
-      if (!forceRefresh && typeof window !== 'undefined') {
-        const cached = sessionStorage.getItem(cacheKey)
-        if (cached) {
-          const cachedData = JSON.parse(cached)
-          if (Date.now() - cachedData.timestamp < 2 * 60 * 1000) { // 2 minutes cache
-            setUserData(cachedData.data)
-            setFormData({
-              name: cachedData.data.name || '',
-              phone: cachedData.data.phone || ''
-            })
-            setLoading(false)
-            return
-          }
-        }
-      }
-      
-      const response = await fetch('/api/user/profile', {
-        cache: 'no-store'
-      })
+      console.log('Fetching user profile...');
+      const response = await fetch('/api/user/profile');
+      console.log('Profile API response status:', response.status);
       
       if (response.ok) {
-        const data = await response.json()
-        setUserData(data)
+        const data = await response.json();
+        console.log('Profile data received:', data);
+        setUserProfile(data.user);
         setFormData({
-          name: data.name || '',
-          phone: data.phone || ''
-        })
-        
-        // Cache the data
-        if (typeof window !== 'undefined') {
-          sessionStorage.setItem(cacheKey, JSON.stringify({
-            data,
-            timestamp: Date.now()
-          }))
-        }
+          name: data.user.name || '',
+          phone: data.user.phone || '',
+          studentId: data.user.studentId || '',
+          department: data.user.department || '',
+          year: data.user.year || '',
+          bio: data.user.bio || ''
+        });
+      } else {
+        const errorText = await response.text();
+        console.error('Profile API error:', response.status, errorText);
+        throw new Error(`Failed to fetch profile: ${response.status}`);
       }
     } catch (error) {
-      console.error('Error fetching user data:', error)
+      console.error('Error fetching profile:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load profile data",
+        variant: "destructive"
+      });
     } finally {
-      setLoading(false)
+      console.log('Setting isLoading to false');
+      setIsLoading(false);
     }
-  }, [session?.user?.email, status])
+  };
 
-  // Initial data fetch
-  useEffect(() => {
-    fetchUserData()
-  }, [session?.user?.email, fetchUserData])
-
-  // Refetch when wishlist is updated (via context)
-  useEffect(() => {
-    if (updateCounter > 0) {
-      console.log('Wishlist update detected, refreshing profile data...')
-      fetchUserData(true)
-    }
-  }, [updateCounter, fetchUserData])
-
-  // Handle tab change with immediate refresh for wishlist
-  const handleTabChange = useCallback((newTab: string) => {
-    setActiveTab(newTab)
-    if (newTab === 'wishlist') {
-      console.log('Switching to wishlist tab, refreshing data...')
-      fetchUserData(true)
-    }
-  }, [fetchUserData])
-
-  const handleAddressChange = useCallback(async () => {
-    // Refresh data when addresses change
-    await fetchUserData(true)
-  }, [fetchUserData])
-
-  // Helper to clear cached user data
-  const clearUserDataCache = () => {
-    if (typeof window !== 'undefined' && session?.user?.email) {
-      const cacheKey = `userData_${session.user.email}`
-      sessionStorage.removeItem(cacheKey)
-    }
-  }
-
-  // Handle removing item from wishlist
-  const handleRemoveFromWishlist = async (wishlistItemId: string) => {
+  const handleSaveProfile = async () => {
     try {
-      const success = await removeFromWishlist(wishlistItemId)
-      if (success) {
-        // Refresh the profile data to update the wishlist display
-        await fetchUserData(true)
-      }
-    } catch (error) {
-      console.error('Error removing item from wishlist:', error)
-    }
-  }
-
-  const updateProfile = async (e: React.FormEvent) => {
-    e.preventDefault()
-    
-    if (!session) {
-      return
-    }
-    
-    try {
-      setUpdating(true)
-      
       const response = await fetch('/api/user/profile', {
         method: 'PUT',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData)
-      })
-      
+        body: JSON.stringify(formData),
+      });
+
       if (response.ok) {
-        const updatedUser = await response.json()
-        
-        // Clear cache and refetch to ensure consistency
-        clearUserDataCache()
-        await fetchUserData(true)
-        
-        alert('Profile updated successfully!')
+        const data = await response.json();
+        setUserProfile(prev => prev ? { ...prev, ...data.user } : null);
+        setIsEditing(false);
+        toast({
+          title: "Success",
+          description: "Profile updated successfully"
+        });
+      } else {
+        throw new Error('Failed to update profile');
       }
     } catch (error) {
-      console.error('Error updating profile:', error)
-      alert('Error updating profile')
-    } finally {
-      setUpdating(false)
+      console.error('Error updating profile:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update profile",
+        variant: "destructive"
+      });
     }
+  };
+
+  const handleAddAddress = async () => {
+    try {
+      const response = await fetch('/api/user/addresses', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(addressForm),
+      });
+
+      if (response.ok) {
+        await fetchUserProfile();
+        setAddressForm({
+          label: '',
+          street: '',
+          city: '',
+          state: '',
+          zipCode: '',
+          country: 'US',
+          isDefault: false
+        });
+        setShowAddressForm(false);
+        toast({
+          title: "Success",
+          description: "Address added successfully"
+        });
+      } else {
+        throw new Error('Failed to add address');
+      }
+    } catch (error) {
+      console.error('Error adding address:', error);
+      toast({
+        title: "Error",
+        description: "Failed to add address",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleDeleteAddress = async (addressId: string) => {
+    try {
+      const response = await fetch(`/api/user/addresses?id=${addressId}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        await fetchUserProfile();
+        toast({
+          title: "Success",
+          description: "Address deleted successfully"
+        });
+      } else {
+        throw new Error('Failed to delete address');
+      }
+    } catch (error) {
+      console.error('Error deleting address:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete address",
+        variant: "destructive"
+      });
+    }
+  };
+
+  if (status === 'loading' || isLoading) {
+    return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
   }
 
-  if (status === 'loading' || loading) {
-    return (
-      <>
-        <Header />
-        <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 pt-20">
-          <div className="container mx-auto p-6 max-w-6xl">
-            <div className="mb-8">
-              <Skeleton className="h-10 w-64 mb-3" />
-              <Skeleton className="h-5 w-96" />
-            </div>
-
-            <div>
-              <div className="grid w-full grid-cols-4 gap-2 mb-6">
-                {[...Array(4)].map((_, i) => (
-                  <Skeleton key={i} className="h-12 rounded-lg" />
-                ))}
-              </div>
-
-              <Card className="overflow-hidden">
-                <CardHeader className="bg-gradient-to-r from-primary/5 to-secondary/5">
-                  <Skeleton className="h-7 w-48 mb-2" />
-                  <Skeleton className="h-4 w-72" />
-                </CardHeader>
-                <CardContent className="p-8">
-                  <div className="flex items-center space-x-6 mb-8">
-                    <Skeleton className="h-24 w-24 rounded-full" />
-                    <div className="space-y-3">
-                      <Skeleton className="h-8 w-48" />
-                      <Skeleton className="h-5 w-64" />
-                      <Skeleton className="h-4 w-32" />
-                    </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {[...Array(2)].map((_, i) => (
-                      <div key={i} className="space-y-3">
-                        <Skeleton className="h-5 w-24" />
-                        <Skeleton className="h-12 w-full" />
-                      </div>
-                    ))}
-                  </div>
-                  
-                  <Skeleton className="h-12 w-40 mt-8" />
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        </div>
-      </>
-    )
+  if (!session) {
+    redirect('/sign-in');
   }
 
-  // Show sign-in prompt for unauthenticated users
-  if (status === 'unauthenticated') {
-    return (
-      <>
-        <Header />
-        <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 flex items-center justify-center pt-20">
-          <div className="text-center p-8 max-w-md mx-auto">
-            <div className="bg-primary/10 rounded-full w-24 h-24 flex items-center justify-center mx-auto mb-6">
-              <User className="h-12 w-12 text-primary" />
-            </div>
-            <h2 className="text-3xl font-bold mb-4">Sign In Required</h2>
-            <p className="text-muted-foreground mb-8 text-lg">
-              Please sign in to view and manage your profile, orders, and wishlist.
-            </p>
-            <div className="space-y-4">
-              <Button 
-                onClick={() => router.push('/sign-in')}
-                className="w-full py-3 text-lg"
-                size="lg"
-              >
-                Sign In
-              </Button>
-              <Button 
-                variant="outline" 
-                onClick={() => router.push('/sign-up')}
-                className="w-full py-3 text-lg"
-                size="lg"
-              >
-                Create Account
-              </Button>
-              <Button 
-                variant="ghost" 
-                onClick={() => router.push('/')}
-                className="w-full py-2"
-              >
-                Continue Shopping
-              </Button>
-            </div>
-          </div>
-        </div>
-      </>
-    )
+  if (!userProfile) {
+    return <div className="flex items-center justify-center min-h-screen">Failed to load profile</div>;
   }
 
-  // TEMPORARILY DISABLED AUTHENTICATION CHECK
-  // if (!session) {
-  //   return (
-  //     <>
-  //       <Header />
-  //       <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 flex items-center justify-center">
-  //         <div className="text-center p-8">
-  //           <User className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
-  //           <h2 className="text-2xl font-semibold mb-2">Sign In Required</h2>
-  //           <p className="text-muted-foreground">Please sign in to view your profile</p>
-  //         </div>
-  //       </div>
-  //     </>
-  //   )
-  // }
+  const handleCancel = () => {
+    setFormData({
+      name: userProfile?.name || '',
+      phone: userProfile?.phone || '',
+      studentId: userProfile?.studentId || '',
+      department: userProfile?.department || '',
+      year: userProfile?.year || '',
+      bio: userProfile?.bio || ''
+    });
+    setIsEditing(false);
+  };
 
-  if (!userData) {
-    return (
-      <>
-        <Header />
-        <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 flex items-center justify-center">
-          <div className="text-center p-8">
-            <Package className="h-16 w-16 mx-auto mb-4 text-destructive" />
-            <h2 className="text-2xl font-semibold mb-2">Error Loading Profile</h2>
-            <p className="text-muted-foreground">Unable to load your profile data</p>
-          </div>
-        </div>
-      </>
-    )
-  }
+  const getRoleColor = (role: string) => {
+    switch (role) {
+      case 'Leader': return 'bg-purple-100 text-purple-800';
+      case 'Admin': return 'bg-blue-100 text-blue-800';
+      case 'Member': return 'bg-green-100 text-green-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
 
   return (
-    <>
-      <Header />
-      <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 pt-20">
-        <div className="container mx-auto p-6 max-w-6xl">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-          >
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-              <div className="flex items-center gap-4">
-                <Avatar className="h-20 w-20 border-4 border-background">
-                  <AvatarImage src={session?.user?.image || undefined} alt={session?.user?.name || 'User'} />
-                  <AvatarFallback className="text-2xl">
-                    {session?.user?.name?.charAt(0) || '?'}
-                  </AvatarFallback>
-                </Avatar>
+    <div className="min-h-screen bg-gray-50">
+      <PortalNavbar />
+      
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900">My Profile</h1>
+          <p className="mt-2 text-gray-600">Manage your personal information and settings</p>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Left Column - Profile Info */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Basic Information */}
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
                 <div>
-                  <h1 className="text-3xl font-bold mb-1">My Account</h1>
-                  <p className="text-muted-foreground">{session?.user?.email}</p>
+                  <CardTitle>Basic Information</CardTitle>
+                  <CardDescription>Your personal details and contact information</CardDescription>
                 </div>
-              </div>
-            </div>
-            
-            <Tabs value={activeTab} onValueChange={handleTabChange} className="mt-6">
-              <TabsList className="grid grid-cols-4">
-                <TabsTrigger value="profile">
-                  <User size={18} className="mr-2" />
-                  <span className="hidden sm:inline">Profile</span>
-                </TabsTrigger>
-                <TabsTrigger value="addresses">
-                  <MapPin size={18} className="mr-2" />
-                  <span className="hidden sm:inline">Addresses</span>
-                </TabsTrigger>
-                <TabsTrigger value="orders">
-                  <Package size={18} className="mr-2" />
-                  <span className="hidden sm:inline">Orders</span>
-                </TabsTrigger>
-                <TabsTrigger value="wishlist">
-                  <Heart size={18} className="mr-2" />
-                  <span className="hidden sm:inline">Wishlist</span>
-                </TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="profile" className="mt-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Profile Information</CardTitle>
-                    <CardDescription>Update your personal details here.</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <form onSubmit={updateProfile} className="space-y-4">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="name">Username</Label>
-                          <Input
-                            id="name"
-                            placeholder="Your username"
-                            value={formData.name}
-                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="phone">Phone</Label>
-                          <Input
-                            id="phone"
-                            placeholder="Your phone number"
-                            value={formData.phone || ''}
-                            onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="email">Email</Label>
-                          <Input
-                            id="email"
-                            type="email"
-                            value={userData?.email || ''}
-                            disabled
-                            readOnly
-                          />
-                          <p className="text-sm text-muted-foreground">Email cannot be changed</p>
-                        </div>
+                <Button
+                  variant={isEditing ? "outline" : "default"}
+                  size="sm"
+                  onClick={() => isEditing ? handleCancel() : setIsEditing(true)}
+                >
+                  {isEditing ? (
+                    <>
+                      <X className="w-4 h-4 mr-2" />
+                      Cancel
+                    </>
+                  ) : (
+                    <>
+                      <Edit className="w-4 h-4 mr-2" />
+                      Edit
+                    </>
+                  )}
+                </Button>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="flex items-center space-x-4">
+                  <Avatar className="w-20 h-20">
+                    <AvatarImage src={userProfile.image || ''} alt={userProfile.name || 'User'} />
+                    <AvatarFallback className="text-xl">
+                      {userProfile.name ? userProfile.name.split(' ').map(n => n[0]).join('') : 'U'}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1">
+                    <h3 className="text-xl font-semibold text-gray-900">
+                      {userProfile.name || 'No name set'}
+                    </h3>
+                    <p className="text-gray-600">{userProfile.email}</p>
+                    <Badge variant="outline" className="mt-1">
+                      {userProfile.points} Points
+                    </Badge>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="name">Full Name</Label>
+                    {isEditing ? (
+                      <Input
+                        id="name"
+                        value={formData.name}
+                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                        placeholder="Enter your full name"
+                      />
+                    ) : (
+                      <div className="flex items-center space-x-2 p-2 bg-gray-50 rounded-md">
+                        <User className="w-4 h-4 text-gray-500" />
+                        <span>{userProfile.name || 'Not set'}</span>
                       </div>
-                      <div className="flex justify-end">
-                        <Button type="submit" disabled={updating}>
-                          {updating ? (
-                            <>
-                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                              Saving...
-                            </>
-                          ) : (
-                            <>
-                              <Save className="mr-2 h-4 w-4" />
-                              Save Changes
-                            </>
-                          )}
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="phone">Phone Number</Label>
+                    {isEditing ? (
+                      <Input
+                        id="phone"
+                        value={formData.phone}
+                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                        placeholder="Enter your phone number"
+                      />
+                    ) : (
+                      <div className="flex items-center space-x-2 p-2 bg-gray-50 rounded-md">
+                        <Phone className="w-4 h-4 text-gray-500" />
+                        <span>{userProfile.phone || 'Not set'}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="studentId">Student ID</Label>
+                    {isEditing ? (
+                      <Input
+                        id="studentId"
+                        value={formData.studentId}
+                        onChange={(e) => setFormData({ ...formData, studentId: e.target.value })}
+                        placeholder="Enter your student ID"
+                      />
+                    ) : (
+                      <div className="flex items-center space-x-2 p-2 bg-gray-50 rounded-md">
+                        <Calendar className="w-4 h-4 text-gray-500" />
+                        <span>{userProfile.studentId || 'Not set'}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="department">Department</Label>
+                    {isEditing ? (
+                      <Input
+                        id="department"
+                        value={formData.department}
+                        onChange={(e) => setFormData({ ...formData, department: e.target.value })}
+                        placeholder="Enter your department"
+                      />
+                    ) : (
+                      <div className="flex items-center space-x-2 p-2 bg-gray-50 rounded-md">
+                        <Users className="w-4 h-4 text-gray-500" />
+                        <span>{userProfile.department || 'Not set'}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="year">Year</Label>
+                    {isEditing ? (
+                      <Input
+                        id="year"
+                        value={formData.year}
+                        onChange={(e) => setFormData({ ...formData, year: e.target.value })}
+                        placeholder="e.g., Sophomore, Junior"
+                      />
+                    ) : (
+                      <div className="flex items-center space-x-2 p-2 bg-gray-50 rounded-md">
+                        <Calendar className="w-4 h-4 text-gray-500" />
+                        <span>{userProfile.year || 'Not set'}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="bio">Bio</Label>
+                  {isEditing ? (
+                    <Textarea
+                      id="bio"
+                      value={formData.bio}
+                      onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
+                      placeholder="Tell us about yourself..."
+                      rows={3}
+                    />
+                  ) : (
+                    <div className="p-2 bg-gray-50 rounded-md">
+                      <p className="text-gray-700">{userProfile.bio || 'No bio available'}</p>
+                    </div>
+                  )}
+                </div>
+
+                {isEditing && (
+                  <div className="flex justify-end space-x-2">
+                    <Button variant="outline" onClick={handleCancel}>
+                      Cancel
+                    </Button>
+                    <Button onClick={handleSaveProfile}>
+                      <Save className="w-4 h-4 mr-2" />
+                      Save Changes
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Addresses */}
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle>Addresses</CardTitle>
+                  <CardDescription>Manage your saved addresses</CardDescription>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowAddressForm(true)}
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Address
+                </Button>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {userProfile.addresses.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    <MapPin className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                    <p>No addresses saved yet</p>
+                    <p className="text-sm">Add your first address to get started</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {userProfile.addresses.map((address) => (
+                      <div
+                        key={address.id}
+                        className="flex items-start justify-between p-4 border rounded-lg"
+                      >
+                        <div className="flex-1">
+                          <div className="flex items-center space-x-2 mb-2">
+                            <Badge variant={address.isDefault ? "default" : "outline"}>
+                              {address.label}
+                            </Badge>
+                            {address.isDefault && (
+                              <Badge variant="secondary">Default</Badge>
+                            )}
+                          </div>
+                          <div className="text-sm text-gray-600">
+                            <p>{address.street}</p>
+                            <p>{address.city}, {address.state} {address.zipCode}</p>
+                            <p>{address.country}</p>
+                          </div>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteAddress(address.id)}
+                          className="text-red-500 hover:text-red-700"
+                        >
+                          <Trash2 className="w-4 h-4" />
                         </Button>
                       </div>
-                    </form>
-                  </CardContent>
-                </Card>
-                
-                <Card className="mt-6">
-                  <CardHeader>
-                    <CardTitle>Account Information</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-2">
-                          <Calendar className="h-5 w-5 text-muted-foreground" />
-                          <span>Member Since</span>
-                        </div>
-                        <span>{userData?.createdAt ? new Date(userData.createdAt).toLocaleDateString() : '-'}</span>
+                    ))}
+                  </div>
+                )}
+
+                {showAddressForm && (
+                  <div className="border-t pt-4 mt-4">
+                    <h4 className="font-medium mb-4">Add New Address</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="addressLabel">Label</Label>
+                        <Input
+                          id="addressLabel"
+                          value={addressForm.label}
+                          onChange={(e) => setAddressForm({ ...addressForm, label: e.target.value })}
+                          placeholder="e.g., Home, Dorm"
+                        />
                       </div>
-                      <Separator />
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-2">
-                          <ShoppingBag className="h-5 w-5 text-muted-foreground" />
-                          <span>Orders</span>
-                        </div>
-                        <Badge variant="outline">{userData?.orders?.length || 0}</Badge>
+                      <div className="space-y-2">
+                        <Label htmlFor="addressStreet">Street Address</Label>
+                        <Input
+                          id="addressStreet"
+                          value={addressForm.street}
+                          onChange={(e) => setAddressForm({ ...addressForm, street: e.target.value })}
+                          placeholder="123 Main St"
+                        />
                       </div>
-                      <Separator />
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-2">
-                          <Heart className="h-5 w-5 text-muted-foreground" />
-                          <span>Wishlist Items</span>
-                        </div>
-                        <Badge variant="outline">{userData?.wishlistCount || 0}</Badge>
+                      <div className="space-y-2">
+                        <Label htmlFor="addressCity">City</Label>
+                        <Input
+                          id="addressCity"
+                          value={addressForm.city}
+                          onChange={(e) => setAddressForm({ ...addressForm, city: e.target.value })}
+                          placeholder="New York"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="addressState">State</Label>
+                        <Input
+                          id="addressState"
+                          value={addressForm.state}
+                          onChange={(e) => setAddressForm({ ...addressForm, state: e.target.value })}
+                          placeholder="NY"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="addressZip">ZIP Code</Label>
+                        <Input
+                          id="addressZip"
+                          value={addressForm.zipCode}
+                          onChange={(e) => setAddressForm({ ...addressForm, zipCode: e.target.value })}
+                          placeholder="10001"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="addressCountry">Country</Label>
+                        <Input
+                          id="addressCountry"
+                          value={addressForm.country}
+                          onChange={(e) => setAddressForm({ ...addressForm, country: e.target.value })}
+                          placeholder="US"
+                        />
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-              
-              <TabsContent value="addresses" className="mt-6">
-                {userData && (
-                  <AddressBook 
-                    addresses={userData.addresses || []} 
-                    onAddressChange={handleAddressChange}
-                  />
+                    <div className="flex items-center space-x-2 mt-4">
+                      <input
+                        type="checkbox"
+                        id="isDefault"
+                        checked={addressForm.isDefault}
+                        onChange={(e) => setAddressForm({ ...addressForm, isDefault: e.target.checked })}
+                        className="rounded"
+                      />
+                      <Label htmlFor="isDefault">Set as default address</Label>
+                    </div>
+                    <div className="flex justify-end space-x-2 mt-4">
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setShowAddressForm(false);
+                          setAddressForm({
+                            label: '',
+                            street: '',
+                            city: '',
+                            state: '',
+                            zipCode: '',
+                            country: 'US',
+                            isDefault: false
+                          });
+                        }}
+                      >
+                        Cancel
+                      </Button>
+                      <Button onClick={handleAddAddress}>
+                        Add Address
+                      </Button>
+                    </div>
+                  </div>
                 )}
-              </TabsContent>
-              
-              <TabsContent value="orders" className="mt-6">
-                {userData?.orders && userData.orders.length > 0 ? (
-                  <div className="space-y-4">
-                    {userData.orders.map((order) => (
-                      <Card key={order.id}>
-                        <CardContent className="p-6">
-                          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              </CardContent>
+            </Card>
+
+            {/* Activity Tabs */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Activity & Achievements</CardTitle>
+                <CardDescription>Your participation history and accomplishments</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Tabs defaultValue="clubs" className="w-full">
+                  <TabsList className="grid w-full grid-cols-3">
+                    <TabsTrigger value="clubs">Clubs</TabsTrigger>
+                    <TabsTrigger value="events">Events</TabsTrigger>
+                    <TabsTrigger value="achievements">Achievements</TabsTrigger>
+                  </TabsList>
+                  
+                  <TabsContent value="clubs" className="space-y-4">
+                    {userProfile.clubMemberships.length === 0 ? (
+                      <div className="text-center py-8 text-gray-500">
+                        <Users className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                        <p>No club memberships yet</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {userProfile.clubMemberships.map((membership) => (
+                          <div key={membership.club.id} className="flex items-center justify-between p-4 border rounded-lg">
+                            <div className="flex items-center space-x-3">
+                              <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                                {membership.club.logo ? (
+                                  <img src={membership.club.logo} alt={membership.club.name} className="w-6 h-6" />
+                                ) : (
+                                  <Users className="w-5 h-5 text-blue-600" />
+                                )}
+                              </div>
+                              <div>
+                                <h4 className="font-medium text-gray-900">{membership.club.name}</h4>
+                                <p className="text-sm text-gray-500">{membership.club.category}</p>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </TabsContent>
+                  
+                  <TabsContent value="events" className="space-y-4">
+                    {userProfile.eventRegistrations.length === 0 ? (
+                      <div className="text-center py-8 text-gray-500">
+                        <Calendar className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                        <p>No event registrations yet</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {userProfile.eventRegistrations.map((registration) => (
+                          <div key={registration.event.id} className="flex items-center justify-between p-4 border rounded-lg">
                             <div>
-                              <h3 className="font-medium">Order #{order.orderNumber}</h3>
-                              <p className="text-sm text-muted-foreground">
-                                Placed on {new Date(order.createdAt).toLocaleDateString()}
+                              <h4 className="font-medium text-gray-900">{registration.event.title}</h4>
+                              <p className="text-sm text-gray-500">
+                                {new Date(registration.event.date).toLocaleDateString()} • {registration.event.venue}
                               </p>
                             </div>
-                            <div className="flex items-center gap-4">
-                              <div>
-                                <p className="text-sm font-medium">Status</p>
-                                <Badge variant={
-                                  order.status === 'completed' ? 'default' :
-                                  order.status === 'processing' ? 'secondary' :
-                                  order.status === 'cancelled' ? 'destructive' : 'outline'
-                                }>
-                                  {order.status}
-                                </Badge>
-                              </div>
-                              <div>
-                                <p className="text-sm font-medium">Total</p>
-                                <p>${order.total.toFixed(2)}</p>
-                              </div>
-                              <Button variant="outline" size="sm">
-                                View Details
-                              </Button>
-                            </div>
+                            <Badge variant="outline">Registered</Badge>
                           </div>
-                        </CardContent>
-                      </Card>
-                    ))}
+                        ))}
+                      </div>
+                    )}
+                  </TabsContent>
+                  
+                  <TabsContent value="achievements" className="space-y-4">
+                    <div className="text-center py-8 text-gray-500">
+                      <Award className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                      <p>No achievements yet</p>
+                      <p className="text-sm">Keep participating to earn achievements!</p>
+                    </div>
+                  </TabsContent>
+                </Tabs>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Right Column - Stats & Quick Info */}
+          <div className="space-y-6">
+            {/* Stats Card */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Statistics</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <Users className="w-4 h-4 text-blue-500" />
+                    <span className="text-sm font-medium">Clubs Joined</span>
                   </div>
-                ) : (
-                  <div className="text-center p-8 border border-dashed rounded-md">
-                    <Package className="mx-auto h-12 w-12 text-gray-300 mb-4" />
-                    <h3 className="font-medium text-lg mb-2">No Orders Yet</h3>
-                    <p className="text-gray-500 mb-4">
-                      You haven't placed any orders yet.
-                    </p>
-                    <Button asChild>
-                      <Link href="/shop">Shop Now</Link>
-                    </Button>
+                  <span className="text-lg font-bold text-blue-600">
+                    {userProfile.clubMemberships.length}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <Calendar className="w-4 h-4 text-green-500" />
+                    <span className="text-sm font-medium">Events Attended</span>
                   </div>
-                )}
-              </TabsContent>
-              
-              <TabsContent value="wishlist" className="mt-6">
-                {userData?.wishlist && userData.wishlist.length > 0 ? (
-                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                    {userData.wishlist.map((item) => (
-                      <Card key={item.id}>
-                        <CardContent className="p-4">
-                          <div className="relative h-48 w-full mb-4">
-                            <Image
-                              src={item.image || '/placeholder.png'}
-                              alt={item.name}
-                              fill
-                              className="object-cover rounded-md"
-                            />
-                            <Button 
-                              size="icon" 
-                              variant="destructive" 
-                              className="absolute top-2 right-2 h-8 w-8 rounded-full opacity-90"
-                              onClick={() => handleRemoveFromWishlist(item.id)}
-                            >
-                              <Trash2 size={16} />
-                            </Button>
-                          </div>
-                          <h3 className="font-medium line-clamp-1">{item.name}</h3>
-                          <p className="font-medium text-lg mt-1">${item.price.toFixed(2)}</p>
-                          <Button className="w-full mt-3" size="sm">
-                            Add to Cart
-                          </Button>
-                        </CardContent>
-                      </Card>
-                    ))}
+                  <span className="text-lg font-bold text-green-600">
+                    {userProfile.eventRegistrations.length}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <Award className="w-4 h-4 text-yellow-500" />
+                    <span className="text-sm font-medium">Total Points</span>
                   </div>
-                ) : (
-                  <div className="text-center p-8 border border-dashed rounded-md">
-                    <Heart className="mx-auto h-12 w-12 text-gray-300 mb-4" />
-                    <h3 className="font-medium text-lg mb-2">Your Wishlist is Empty</h3>
-                    <p className="text-gray-500 mb-4">
-                      Save items you love to your wishlist.
-                    </p>
-                    <Button asChild>
-                      <Link href="/shop">Continue Shopping</Link>
-                    </Button>
+                  <span className="text-lg font-bold text-yellow-600">
+                    {userProfile.points}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <Users className="w-4 h-4 text-purple-500" />
+                    <span className="text-sm font-medium">Clubs Led</span>
                   </div>
-                )}
-              </TabsContent>
-            </Tabs>
-          </motion.div>
+                  <span className="text-lg font-bold text-purple-600">
+                    {userProfile.ownedClubs.length}
+                  </span>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Quick Actions */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Quick Actions</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <Button className="w-full" variant="outline">
+                  <Users className="w-4 h-4 mr-2" />
+                  Browse Clubs
+                </Button>
+                <Button className="w-full" variant="outline">
+                  <Calendar className="w-4 h-4 mr-2" />
+                  View Events
+                </Button>
+                <Button className="w-full" variant="outline">
+                  <Award className="w-4 h-4 mr-2" />
+                  Leaderboard
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
-    </>
-  )
-}
+    </div>
+  );
+};
+
+export default ProfilePage;

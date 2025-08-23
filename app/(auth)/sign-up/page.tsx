@@ -27,7 +27,7 @@ const SignUpPage = () => {
           className="mb-6 text-center"
         >
           <h1 className="text-2xl font-bold">Create Your Account</h1>
-          <p className="text-muted-foreground mt-2">Join NanoDrip today</p>
+          <p className="text-muted-foreground mt-2">Join Tekions today</p>
         </motion.div>
         <SignUpForm />
       </div>

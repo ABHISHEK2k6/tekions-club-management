@@ -36,7 +36,7 @@ export const sendPasswordResetNodemailer = async (email: string, resetUrl: strin
     const info = await transporter.sendMail({
       from: process.env.EMAIL_FROM || process.env.GMAIL_USER || process.env.SMTP_USER,
       to: email,
-      subject: 'Password Reset Request - NanoDrip Store',
+      subject: 'Password Reset Request - Tekions',
       html: generatePasswordResetHTML(resetUrl, email),
     });
 
@@ -80,9 +80,9 @@ export const sendPasswordResetResend = async (email: string, resetUrl: string): 
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: process.env.EMAIL_FROM || 'noreply@nanodripstore.com',
+        from: process.env.EMAIL_FROM || 'noreply@tekions.com',
         to: [email],
-        subject: 'Password Reset Request - NanoDrip Store',
+        subject: 'Password Reset Request - Tekions',
         html: generatePasswordResetHTML(resetUrl, email),
       }),
     });
@@ -113,11 +113,11 @@ export const sendPasswordResetSendGrid = async (email: string, resetUrl: string)
       body: JSON.stringify({
         personalizations: [{
           to: [{ email: email }],
-          subject: 'Password Reset Request - NanoDrip Store'
+          subject: 'Password Reset Request - Tekions'
         }],
         from: {
-          email: process.env.EMAIL_FROM || 'noreply@nanodripstore.com',
-          name: 'NanoDrip Store'
+          email: process.env.EMAIL_FROM || 'noreply@tekions.com',
+          name: 'Tekions'
         },
         content: [{
           type: 'text/html',
@@ -207,14 +207,14 @@ const generatePasswordResetHTML = (resetUrl: string, email: string) => {
     <body>
       <div class="container">
         <div class="header">
-          <div class="logo">NanoDrip Store</div>
+          <div class="logo">Tekions</div>
           <h1>Password Reset Request</h1>
         </div>
         
         <div class="content">
           <p>Hello,</p>
           
-          <p>We received a request to reset your password for your NanoDrip Store account. If you made this request, click the button below to reset your password:</p>
+          <p>We received a request to reset your password for your Tekions account. If you made this request, click the button below to reset your password:</p>
           
           <div style="text-align: center;">
             <a href="${resetUrl}" class="button">Reset My Password</a>
@@ -237,12 +237,12 @@ const generatePasswordResetHTML = (resetUrl: string, email: string) => {
           <p>If you're having trouble clicking the button, you can also visit our website and go to the "Forgot Password" page to request a new reset link.</p>
           
           <p>Best regards,<br>
-          The NanoDrip Store Team</p>
+          The Tekions Team</p>
         </div>
         
         <div class="footer">
-          <p>This email was sent from NanoDrip Store. If you have any questions, please contact our support team.</p>
-          <p>© ${new Date().getFullYear()} NanoDrip Store. All rights reserved.</p>
+          <p>This email was sent from Tekions. If you have any questions, please contact our support team.</p>
+          <p>© ${new Date().getFullYear()} Tekions. All rights reserved.</p>
         </div>
       </div>
     </body>
