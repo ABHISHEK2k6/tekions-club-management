@@ -51,10 +51,11 @@ const SignInContent = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="mb-6 text-center"
+          className="mb-8 text-center"
         >
-          <h1 className="text-2xl font-bold">Welcome Back</h1>
-          <p className="text-muted-foreground mt-2">Sign in to your Tekions account</p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2" style={{ fontFamily: 'monospace' }}>
+            SIGN IN
+          </h1>
         </motion.div>
         
         {error && (
