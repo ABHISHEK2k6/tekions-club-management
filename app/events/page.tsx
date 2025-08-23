@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import PortalNavbar from '@/components/portal-navbar';
+import { useEvents } from '@/hooks/use-events';
 import { 
   Calendar, 
   Clock, 
@@ -31,130 +32,48 @@ interface Event {
   location: string;
   maxParticipants?: number;
   currentParticipants: number;
-  isRegistered: boolean;
-  isFavorite: boolean;
   category: string;
-  club: {
-    id: string;
-    name: string;
-    logo?: string;
-  };
+  clubName: string;
+  clubId: string;
   image?: string;
+  registrationLink?: string;
 }
 
 const EventsPage = () => {
   const { data: session, status } = useSession();
-  const [events, setEvents] = useState<Event[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { events, loading, error, isDemo } = useEvents();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
-  const [selectedFilter, setSelectedFilter] = useState('all'); // all, upcoming, registered, past
+  const [selectedFilter, setSelectedFilter] = useState('upcoming'); // default to upcoming events
 
-  const categories = ['all', 'Technology', 'Cultural', 'Sports', 'Academic', 'Social', 'Workshop'];
+  // Extract unique categories from events
+  const categories = ['all', ...Array.from(new Set(events.map(event => event.category).filter(Boolean)))];
 
-  useEffect(() => {
-    const loadEvents = async () => {
-      setLoading(true);
-      try {
-        // Mock data - replace with actual API call
-        const mockEvents: Event[] = [
-          {
-            id: '1',
-            title: 'Tech Talk: Introduction to AI',
-            description: 'Join us for an exciting introduction to artificial intelligence and machine learning concepts.',
-            date: '2025-08-25T14:00:00Z',
-            endDate: '2025-08-25T16:00:00Z',
-            location: 'Auditorium A',
-            maxParticipants: 100,
-            currentParticipants: 45,
-            isRegistered: true,
-            isFavorite: false,
-            category: 'Technology',
-            club: {
-              id: '1',
-              name: 'Computer Science Club'
-            }
-          },
-          {
-            id: '2',
-            title: 'Cultural Festival Planning',
-            description: 'Planning meeting for the upcoming cultural festival. All cultural society members are invited.',
-            date: '2025-08-26T16:30:00Z',
-            location: 'Room 201',
-            currentParticipants: 15,
-            isRegistered: false,
-            isFavorite: true,
-            category: 'Cultural',
-            club: {
-              id: '2',
-              name: 'Cultural Society'
-            }
-          },
-          {
-            id: '3',
-            title: 'Photography Workshop',
-            description: 'Learn advanced photography techniques from professional photographers.',
-            date: '2025-08-27T10:00:00Z',
-            endDate: '2025-08-27T15:00:00Z',
-            location: 'Art Studio',
-            maxParticipants: 25,
-            currentParticipants: 18,
-            isRegistered: false,
-            isFavorite: false,
-            category: 'Workshop',
-            club: {
-              id: '3',
-              name: 'Photography Club'
-            }
-          },
-          {
-            id: '4',
-            title: 'Basketball Tournament',
-            description: 'Annual inter-college basketball tournament. Register your team now!',
-            date: '2025-08-30T09:00:00Z',
-            endDate: '2025-08-30T18:00:00Z',
-            location: 'Sports Complex',
-            maxParticipants: 80,
-            currentParticipants: 32,
-            isRegistered: true,
-            isFavorite: true,
-            category: 'Sports',
-            club: {
-              id: '4',
-              name: 'Sports Committee'
-            }
-          },
-          {
-            id: '5',
-            title: 'Web Development Bootcamp',
-            description: 'Intensive 3-day bootcamp covering modern web development technologies.',
-            date: '2025-09-01T09:00:00Z',
-            endDate: '2025-09-03T17:00:00Z',
-            location: 'Computer Lab',
-            maxParticipants: 30,
-            currentParticipants: 22,
-            isRegistered: false,
-            isFavorite: false,
-            category: 'Technology',
-            club: {
-              id: '1',
-              name: 'Computer Science Club'
-            }
-          }
-        ];
-
-        setEvents(mockEvents);
-      } catch (error) {
-        console.error('Failed to load events:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (session) {
-      loadEvents();
+  // Filter events based on search and category
+  const filteredEvents = events.filter(event => {
+    const matchesSearch = event.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         event.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         event.clubName.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesCategory = selectedCategory === 'all' || event.category === selectedCategory;
+    
+    const now = new Date();
+    const eventDate = new Date(event.date);
+    
+    let matchesFilter = true;
+    switch (selectedFilter) {
+      case 'upcoming':
+        matchesFilter = eventDate > now;
+        break;
+      case 'past':
+        matchesFilter = eventDate < now;
+        break;
+      default:
+        matchesFilter = true;
     }
-  }, [session]);
+    
+    return matchesSearch && matchesCategory && matchesFilter;
+  });
 
   if (status === 'loading') {
     return (
@@ -168,71 +87,6 @@ const EventsPage = () => {
     redirect('/sign-in');
   }
 
-  const filteredEvents = events.filter(event => {
-    const matchesSearch = event.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         event.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         event.club.name.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesCategory = selectedCategory === 'all' || event.category === selectedCategory;
-    
-    const now = new Date();
-    const eventDate = new Date(event.date);
-    
-    let matchesFilter = true;
-    switch (selectedFilter) {
-      case 'upcoming':
-        matchesFilter = eventDate > now;
-        break;
-      case 'registered':
-        matchesFilter = event.isRegistered;
-        break;
-      case 'past':
-        matchesFilter = eventDate < now;
-        break;
-      default:
-        matchesFilter = true;
-    }
-
-    return matchesSearch && matchesCategory && matchesFilter;
-  });
-
-  const formatEventDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      weekday: 'short',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
-
-  const getEventStatus = (event: Event) => {
-    const now = new Date();
-    const eventDate = new Date(event.date);
-    const endDate = event.endDate ? new Date(event.endDate) : eventDate;
-
-    if (now < eventDate) {
-      return { status: 'upcoming', color: 'bg-blue-100 text-blue-800' };
-    } else if (now >= eventDate && now <= endDate) {
-      return { status: 'ongoing', color: 'bg-green-100 text-green-800' };
-    } else {
-      return { status: 'past', color: 'bg-gray-100 text-gray-800' };
-    }
-  };
-
-  const toggleFavorite = (eventId: string) => {
-    setEvents(events.map(event =>
-      event.id === eventId ? { ...event, isFavorite: !event.isFavorite } : event
-    ));
-  };
-
-  const toggleRegistration = (eventId: string) => {
-    setEvents(events.map(event =>
-      event.id === eventId ? { ...event, isRegistered: !event.isRegistered } : event
-    ));
-  };
-
   return (
     <div className="min-h-screen bg-background">
       <PortalNavbar />
@@ -245,6 +99,30 @@ const EventsPage = () => {
             Discover exciting events and activities happening around campus.
           </p>
         </div>
+
+        {/* Demo Data Warning */}
+        {isDemo && (
+          <div className="mb-6 p-4 border border-yellow-200 bg-yellow-50 dark:bg-yellow-900/20 dark:border-yellow-800 rounded-lg">
+            <div className="flex items-start gap-3">
+              <div className="text-yellow-600 dark:text-yellow-400 mt-0.5">
+                ⚠️
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-yellow-800 dark:text-yellow-200 mb-1">
+                  Demo Data Currently Displayed
+                </h3>
+                <p className="text-sm text-yellow-700 dark:text-yellow-300 mb-2">
+                  These are sample events because your Google Sheet is not accessible yet.
+                </p>
+                <div className="text-xs text-yellow-600 dark:text-yellow-400">
+                  <strong>To fix:</strong> Make sure your Google Sheet is shared as "Anyone with the link can view"
+                  <br />
+                  <strong>Sheet ID:</strong> 1zQtvcA-BbpM0WIwwXOyMhJ_oi2bTGMYuCphihG5eMhI
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Filters */}
         <div className="flex flex-col lg:flex-row gap-4 mb-8">
@@ -305,31 +183,26 @@ const EventsPage = () => {
         ) : filteredEvents.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredEvents.map((event) => {
-              const eventStatus = getEventStatus(event);
+              const eventDate = new Date(event.date);
+              const now = new Date();
+              const isUpcoming = eventDate > now;
+              
               return (
                 <Card key={event.id} className="hover:shadow-lg transition-shadow group">
                   <CardHeader className="pb-3">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-2">
-                          <Badge className={eventStatus.color}>
-                            {eventStatus.status}
+                          <Badge className={isUpcoming ? "bg-green-500" : "bg-gray-500"}>
+                            {isUpcoming ? "Upcoming" : "Past"}
                           </Badge>
                           <Badge variant="outline" className="text-xs">
                             {event.category}
                           </Badge>
                         </div>
                         <CardTitle className="text-lg line-clamp-2">{event.title}</CardTitle>
-                        <p className="text-sm text-muted-foreground">{event.club.name}</p>
+                        <p className="text-sm text-muted-foreground">{event.clubName}</p>
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => toggleFavorite(event.id)}
-                        className="opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        <Heart className={`h-4 w-4 ${event.isFavorite ? 'fill-red-500 text-red-500' : ''}`} />
-                      </Button>
                     </div>
                   </CardHeader>
                   
@@ -341,7 +214,7 @@ const EventsPage = () => {
                     <div className="space-y-2 text-sm text-muted-foreground">
                       <div className="flex items-center gap-2">
                         <Calendar className="h-4 w-4" />
-                        <span>{formatEventDate(event.date)}</span>
+                        <span>{eventDate.toLocaleDateString()}</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <MapPin className="h-4 w-4" />
@@ -357,15 +230,25 @@ const EventsPage = () => {
                     </div>
 
                     <div className="flex gap-2 pt-2">
-                      <Button
-                        variant={event.isRegistered ? "secondary" : "default"}
-                        size="sm"
-                        className="flex-1"
-                        onClick={() => toggleRegistration(event.id)}
-                        disabled={event.maxParticipants && event.currentParticipants >= event.maxParticipants && !event.isRegistered}
-                      >
-                        {event.isRegistered ? 'Registered' : 'Register'}
-                      </Button>
+                      {event.registrationLink ? (
+                        <Button 
+                          size="sm" 
+                          className="flex-1"
+                          asChild
+                        >
+                          <a href={event.registrationLink} target="_blank" rel="noopener noreferrer">
+                            Register
+                          </a>
+                        </Button>
+                      ) : (
+                        <Button 
+                          size="sm" 
+                          className="flex-1"
+                          disabled={!isUpcoming}
+                        >
+                          {isUpcoming ? 'Register' : 'Event Ended'}
+                        </Button>
+                      )}
                       <Button variant="outline" size="sm" asChild>
                         <Link href={`/events/${event.id}`}>
                           <ExternalLink className="h-4 w-4" />

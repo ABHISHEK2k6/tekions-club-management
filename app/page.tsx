@@ -2,18 +2,9 @@
 
 import { useSession } from "next-auth/react";
 import { redirect } from 'next/navigation';
-import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { 
-  Users, 
-  Calendar, 
-  Trophy, 
-  Zap,
-  ArrowRight,
-  CheckCircle
-} from 'lucide-react';
+import Image from 'next/image';
 
 export default function Home() {
   const { data: session, status } = useSession();
@@ -35,185 +26,276 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-background/50">
-      {/* Hero Section */}
-      <motion.main
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.6 }}
-        className="container mx-auto px-4 py-16"
+    <div 
+      className="relative overflow-hidden w-screen h-screen"
+      style={{
+        background: '#FBFBF1',
+        backgroundImage: "url('/UI/homebg.jpg')",
+        backgroundSize: 'contain',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat'
+      }}
+    >
+      <div 
+        className="relative w-full h-full"
       >
-        <div className="text-center space-y-8 max-w-4xl mx-auto">
-          {/* Header */}
-          <div className="space-y-4">
-            <motion.div
-              initial={{ y: -20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.2 }}
-              className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-medium"
-            >
-              <Zap className="h-4 w-4" />
-              Student Club Management Portal
-            </motion.div>
-            
-            <motion.h1
-              initial={{ y: -20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.3 }}
-              className="text-5xl md:text-6xl font-bold text-foreground leading-tight"
-            >
-              Connect, Engage, and 
-              <span className="text-primary"> Lead</span>
-            </motion.h1>
-            
-            <motion.p
-              initial={{ y: -20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.4 }}
-              className="text-xl text-muted-foreground max-w-2xl mx-auto"
-            >
-              Join student clubs, discover exciting events, and build lasting connections. 
-              Your journey to campus leadership starts here.
-            </motion.p>
-          </div>
+      {/* Main ground line */}
+      <div 
+        className="absolute"
+        style={{
+          width: '100vw',
+          height: '0px',
+          left: '0px',
+          bottom: '9vh',
+          border: '3px solid #5A5B55'
+        }}
+      />
 
-          {/* CTA Buttons */}
-          <motion.div
-            initial={{ y: -20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.5 }}
-            className="flex flex-col sm:flex-row gap-4 justify-center items-center"
-          >
-            <Button size="lg" className="px-8 py-6 text-lg" asChild>
-              <Link href="/sign-up">
-                Get Started
-                <ArrowRight className="ml-2 h-5 w-5" />
-              </Link>
-            </Button>
-            <Button variant="outline" size="lg" className="px-8 py-6 text-lg" asChild>
-              <Link href="/sign-in">
-                Sign In
-              </Link>
-            </Button>
-          </motion.div>
+      {/* First Cactus */}
+      <div 
+        className="absolute"
+        style={{
+          width: '4.5vw',
+          height: '4.5vw',
+          left: '55vw',
+          bottom: '9vh'
+        }}
+      >
+        <Image 
+          src="/UI/cactus.png" 
+          alt="Cactus" 
+          width={99} 
+          height={99} 
+          className="object-contain w-full h-full"
+        />
+      </div>
 
-          {/* Features Grid */}
-          <motion.div
-            initial={{ y: 40, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.6 }}
-            className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-20"
-          >
-            <Card className="border-2 hover:border-blue-200 transition-colors">
-              <CardHeader className="text-center">
-                <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-4">
-                  <Users className="h-6 w-6 text-blue-600" />
-                </div>
-                <CardTitle>Join Clubs</CardTitle>
-                <CardDescription>
-                  Discover and join clubs that match your interests and passions
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ul className="space-y-2 text-sm text-gray-600">
-                  <li className="flex items-center gap-2">
-                    <CheckCircle className="h-4 w-4 text-green-500" />
-                    Browse by category
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle className="h-4 w-4 text-green-500" />
-                    One-click membership
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle className="h-4 w-4 text-green-500" />
-                    Connect with peers
-                  </li>
-                </ul>
-              </CardContent>
-            </Card>
+      {/* Second Cactus */}
+      <div 
+        className="absolute"
+        style={{
+          width: '4.5vw',
+          height: '4.5vw',
+          right: '5vw',
+          bottom: '9vh'
+        }}
+      >
+        <Image 
+          src="/UI/cactus.png" 
+          alt="Cactus" 
+          width={105} 
+          height={105} 
+          className="object-contain w-full h-full"
+        />
+      </div>
 
-            <Card className="border-2 hover:border-blue-200 transition-colors">
-              <CardHeader className="text-center">
-                <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mx-auto mb-4">
-                  <Calendar className="h-6 w-6 text-green-600" />
-                </div>
-                <CardTitle>Attend Events</CardTitle>
-                <CardDescription>
-                  Register for workshops, competitions, and social gatherings
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ul className="space-y-2 text-sm text-gray-600">
-                  <li className="flex items-center gap-2">
-                    <CheckCircle className="h-4 w-4 text-green-500" />
-                    Easy registration
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle className="h-4 w-4 text-green-500" />
-                    Calendar sync
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle className="h-4 w-4 text-green-500" />
-                    Event reminders
-                  </li>
-                </ul>
-              </CardContent>
-            </Card>
+      {/* Ground details - Line 2 */}
+      <div 
+        className="absolute"
+        style={{
+          width: '2vw',
+          height: '0px',
+          left: '72vw',
+          bottom: '5vh',
+          border: '1px solid #000000',
+          transform: 'rotate(7.35deg)'
+        }}
+      />
 
-            <Card className="border-2 hover:border-blue-200 transition-colors">
-              <CardHeader className="text-center">
-                <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mx-auto mb-4">
-                  <Trophy className="h-6 w-6 text-purple-600" />
-                </div>
-                <CardTitle>Earn Recognition</CardTitle>
-                <CardDescription>
-                  Build your profile and climb the leaderboard through participation
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ul className="space-y-2 text-sm text-gray-600">
-                  <li className="flex items-center gap-2">
-                    <CheckCircle className="h-4 w-4 text-green-500" />
-                    Points system
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle className="h-4 w-4 text-green-500" />
-                    Achievements
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle className="h-4 w-4 text-green-500" />
-                    Leadership opportunities
-                  </li>
-                </ul>
-              </CardContent>
-            </Card>
-          </motion.div>
+      {/* Ground details - Line 3 */}
+      <div 
+        className="absolute"
+        style={{
+          width: '2vw',
+          height: '0px',
+          left: '63vw',
+          bottom: '6vh',
+          border: '1px solid #000000',
+          transform: 'rotate(7.35deg)'
+        }}
+      />
 
-          {/* Stats Section */}
-          <motion.div
-            initial={{ y: 40, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.8 }}
-            className="bg-white rounded-2xl p-8 shadow-lg border mt-20"
-          >
-            <h3 className="text-2xl font-bold text-gray-900 mb-8">Join Our Thriving Community</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              <div className="text-center">
-                <div className="text-3xl font-bold text-blue-600">50+</div>
-                <p className="text-gray-600">Active Clubs</p>
-              </div>
-              <div className="text-center">
-                <div className="text-3xl font-bold text-green-600">500+</div>
-                <p className="text-gray-600">Students</p>
-              </div>
-              <div className="text-center">
-                <div className="text-3xl font-bold text-purple-600">200+</div>
-                <p className="text-gray-600">Events Monthly</p>
-              </div>
-            </div>
-          </motion.div>
+      {/* Ground details - Line 4 */}
+      <div 
+        className="absolute"
+        style={{
+          width: '2vw',
+          height: '0px',
+          left: '78vw',
+          bottom: '7vh',
+          border: '1px solid #000000',
+          transform: 'rotate(7.35deg)'
+        }}
+      />
+
+      {/* Sign in button background */}
+      <div 
+        className="absolute"
+        style={{
+          width: '15vw',
+          height: '8vh',
+          right: '3vw',
+          top: '3vh',
+          background: '#FBFBF1',
+          border: '4px solid #000000',
+          borderRadius: '25px',
+          boxSizing: 'border-box'
+        }}
+      />
+
+      {/* Sign in button text */}
+      <Link href="/sign-in">
+        <div 
+          className="absolute cursor-pointer hover:opacity-80 transition-opacity"
+          style={{
+            width: '15vw',
+            height: '8vh',
+            right: '3vw',
+            top: '3vh',
+            fontFamily: "'Press Start 2P', monospace",
+            fontStyle: 'normal',
+            fontWeight: 400,
+            fontSize: 'clamp(14px, 1.8vw, 27px)',
+            lineHeight: '8vh',
+            textAlign: 'center',
+            letterSpacing: '0.25em',
+            color: '#000000'
+          }}
+        >
+          signin
         </div>
-      </motion.main>
+      </Link>
+
+      {/* Birds positioned as in reference */}
+      {/* Top right bird - highest position */}
+      <div 
+        className="absolute"
+        style={{
+          right: '70rem',
+          top: '5vh',
+          width: '2.5vw',
+          height: '2.5vw'
+        }}
+      >
+        <Image 
+          src="/UI/bird.png" 
+          alt="Flying bird" 
+          width={30} 
+          height={30} 
+          className="object-contain opacity-70 w-full h-full"
+        />
+      </div>
+
+      {/* Second bird - middle top */}
+      <div 
+        className="absolute"
+        style={{
+          right: '40rem',
+          top: '10rem',
+          width: '2.5vw',
+          height: '2.5vw'
+        }}
+      >
+        <Image 
+          src="/UI/bird.png" 
+          alt="Flying bird" 
+          width={30} 
+          height={30} 
+          className="object-contain opacity-70 w-full h-full"
+        />
+      </div>
+
+      {/* Third bird - lower in the top formation */}
+      <div 
+        className="absolute"
+        style={{
+          right: '50rem',
+          top: '16vh',
+          width: '2.5vw',
+          height: '2.5vw'
+        }}
+      >
+        <Image 
+          src="/UI/bird.png" 
+          alt="Flying bird" 
+          width={30} 
+          height={30} 
+          className="object-contain opacity-70 w-full h-full"
+        />
+      </div>
+
+      {/* Center-left bird - near the title */}
+      <div 
+        className="absolute"
+        style={{
+          left: '10rem',
+          top: '40vh',
+          width: '2.5vw',
+          height: '2.5vw'
+        }}
+      >
+        <Image 
+          src="/UI/bird.png" 
+          alt="Flying bird" 
+          width={30} 
+          height={30} 
+          className="object-contain opacity-70 w-full h-full"
+        />
+      </div>
+
+      {/* Bottom left bird */}
+      <div 
+        className="absolute"
+        style={{
+          left: '6vw',
+          bottom: '35vh',
+          width: '2.5vw',
+          height: '2.5vw'
+        }}
+      >
+        <Image 
+          src="/UI/bird.png" 
+          alt="Flying bird" 
+          width={30} 
+          height={30} 
+          className="object-contain opacity-70 w-full h-full"
+        />
+      </div>
+
+      {/* Bottom right bird */}
+      <div 
+        className="absolute"
+        style={{
+          right: '70rem',
+          bottom: '40vh',
+          width: '2.5vw',
+          height: '2.5vw'
+        }}
+      >
+        <Image 
+          src="/UI/bird.png" 
+          alt="Flying bird" 
+          width={30} 
+          height={30} 
+          className="object-contain opacity-70 w-full h-full"
+        />
+      </div>
+
+      {/* Tekions label */}
+      <div 
+        className="absolute"
+        style={{
+          left: '3vw',
+          top: '5vh',
+          fontFamily: "'Press Start 2P', monospace",
+          fontSize: 'clamp(16px, 2vw, 24px)',
+          color: '#5A5B55',
+          letterSpacing: '0.1em'
+        }}
+      >
+        Tekions
+      </div>
+      </div>
     </div>
   );
 }

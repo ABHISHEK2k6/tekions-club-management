@@ -7,6 +7,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import PortalNavbar from '@/components/portal-navbar';
+import { useEvents } from '@/hooks/use-events';
+import { useUserClubs } from '@/hooks/use-user-clubs';
+import { useAnnouncements } from '@/hooks/use-announcements';
 import { 
   Users, 
   Calendar, 
@@ -43,131 +46,94 @@ interface Event {
   title: string;
   description: string;
   date: string;
+  endDate?: string;
   location: string;
-  club: {
-    name: string;
-  };
+  maxParticipants?: number;
+  currentParticipants: number;
+  category: string;
+  clubName: string;
+  clubId: string;
+  image?: string;
+  registrationLink?: string;
 }
 
 interface Announcement {
   id: string;
   title: string;
   content: string;
-  priority: 'low' | 'normal' | 'high';
-  createdAt: string;
-  club: {
-    name: string;
-  };
+  club: string;
+  priority: 'urgent' | 'high' | 'normal' | 'medium' | 'low';
+  author: string;
+  date: string;
+  tags: string[];
 }
 
 const DashboardPage = () => {
   const { data: session, status } = useSession();
+  const { events, loading: eventsLoading, error: eventsError, isDemo } = useEvents();
+  const { clubs, loading: clubsLoading, error: clubsError, totalJoinedClubs } = useUserClubs();
+  const { announcements: liveAnnouncements, loading: announcementsLoading } = useAnnouncements();
   const [stats, setStats] = useState<DashboardStats>({
-    joinedClubs: 3,
+    joinedClubs: 0, // Will be updated from real data
     upcomingEvents: 5,
     totalPoints: 150,
     campusRank: 12
   });
-  const [clubs, setClubs] = useState<Club[]>([]);
-  const [events, setEvents] = useState<Event[]>([]);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Update stats when real data loads
   useEffect(() => {
-    // Simulate loading data
-    const loadDashboardData = async () => {
-      setLoading(true);
-      try {
-        // Mock data - replace with actual API calls
-        const mockClubs: Club[] = [
-          {
-            id: '1',
-            name: 'Computer Science Club',
-            description: 'Exploring the world of technology and programming',
-            _count: { members: 45 }
-          },
-          {
-            id: '2',
-            name: 'Cultural Society',
-            description: 'Celebrating diverse cultures and traditions',
-            _count: { members: 67 }
-          },
-          {
-            id: '3',
-            name: 'Photography Club',
-            description: 'Capturing moments and creating memories',
-            _count: { members: 23 }
-          }
-        ];
+    setStats(prev => ({
+      ...prev,
+      joinedClubs: totalJoinedClubs
+    }));
+  }, [totalJoinedClubs]);
 
-        const mockEvents: Event[] = [
-          {
-            id: '1',
-            title: 'Tech Talk: Introduction to AI',
-            description: 'Learn about artificial intelligence basics',
-            date: '2025-08-25T14:00:00Z',
-            location: 'Auditorium A',
-            club: { name: 'Computer Science Club' }
-          },
-          {
-            id: '2',
-            title: 'Cultural Festival Planning',
-            description: 'Planning meeting for upcoming cultural festival',
-            date: '2025-08-26T16:30:00Z',
-            location: 'Room 201',
-            club: { name: 'Cultural Society' }
-          },
-          {
-            id: '3',
-            title: 'Photography Workshop',
-            description: 'Learn advanced photography techniques',
-            date: '2025-08-27T10:00:00Z',
-            location: 'Art Studio',
-            club: { name: 'Photography Club' }
-          }
-        ];
-
-        const mockAnnouncements: Announcement[] = [
-          {
-            id: '1',
-            title: 'Annual Sports Day Registration Open',
-            content: 'Register now for the annual sports day competition',
-            priority: 'high',
-            createdAt: '2025-08-24T10:00:00Z',
-            club: { name: 'Sports Committee' }
-          },
-          {
-            id: '2',
-            title: 'New Workshop on Web Development',
-            content: 'Join us for an exciting workshop on modern web development',
-            priority: 'normal',
-            createdAt: '2025-08-24T05:00:00Z',
-            club: { name: 'Tech Club' }
-          },
-          {
-            id: '3',
-            title: 'Cultural Week Planning Meeting',
-            content: 'Important meeting for cultural week planning',
-            priority: 'normal',
-            createdAt: '2025-08-23T00:00:00Z',
-            club: { name: 'Cultural Society' }
-          }
-        ];
-
-        setClubs(mockClubs);
-        setEvents(mockEvents);
-        setAnnouncements(mockAnnouncements);
-      } catch (error) {
-        console.error('Failed to load dashboard data:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (session) {
-      loadDashboardData();
+  useEffect(() => {
+    // Use real announcements data from the hook
+    if (!announcementsLoading && liveAnnouncements) {
+      // Map API data to dashboard format and sort by date (most recent first)
+      const mappedAnnouncements: Announcement[] = liveAnnouncements
+        .map(ann => ({
+          id: ann.id,
+          title: ann.title,
+          content: ann.content,
+          club: ann.club,
+          priority: ann.priority,
+          author: ann.author,
+          date: ann.createdAt, // Map createdAt to date
+          tags: ann.tags
+        }))
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      
+      setAnnouncements(mappedAnnouncements);
+      setLoading(false);
     }
-  }, [session]);
+  }, [liveAnnouncements, announcementsLoading]);
+
+  // Update stats based on upcoming events
+  useEffect(() => {
+    if (events.length > 0) {
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      
+      const upcomingEvents = events.filter(event => {
+        const eventDate = new Date(event.date);
+        const isValidDate = !isNaN(eventDate.getTime());
+        
+        if (!isValidDate) return false;
+        
+        const eventDay = new Date(eventDate.getFullYear(), eventDate.getMonth(), eventDate.getDate());
+        return eventDay >= today;
+      });
+      
+      setStats(prev => ({
+        ...prev,
+        upcomingEvents: upcomingEvents.length
+      }));
+    }
+  }, [events]);
 
   if (status === 'loading') {
     return (
@@ -194,7 +160,9 @@ const DashboardPage = () => {
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
+      case 'urgent': return 'bg-red-600 text-white';
       case 'high': return 'bg-destructive text-destructive-foreground';
+      case 'medium': return 'bg-orange-500 text-white';
       case 'normal': return 'bg-secondary text-secondary-foreground';
       case 'low': return 'bg-muted text-muted-foreground';
       default: return 'bg-secondary text-secondary-foreground';
@@ -279,7 +247,7 @@ const DashboardPage = () => {
               </Button>
             </CardHeader>
             <CardContent className="space-y-4">
-              {loading ? (
+              {loading || eventsLoading ? (
                 <div className="space-y-3">
                   {[1, 2, 3].map((i) => (
                     <div key={i} className="animate-pulse">
@@ -288,30 +256,67 @@ const DashboardPage = () => {
                     </div>
                   ))}
                 </div>
+              ) : eventsError ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Calendar className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>Error loading events: {eventsError}</p>
+                </div>
               ) : events.length > 0 ? (
-                events.slice(0, 3).map((event) => (
-                  <div key={event.id} className="flex items-start justify-between p-4 rounded-lg border border-border hover:bg-muted/50 transition-colors">
-                    <div className="flex-1">
-                      <h4 className="font-semibold text-sm text-foreground mb-1">{event.title}</h4>
-                      <p className="text-xs text-muted-foreground mb-2">{event.club.name}</p>
-                      <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                        <div className="flex items-center gap-1">
-                          <Clock className="h-3 w-3" />
-                          <span>{new Date(event.date).toLocaleDateString()}</span>
+                (() => {
+                  const now = new Date();
+                  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                  
+                  const upcomingEvents = events.filter(event => {
+                    const eventDate = new Date(event.date);
+                    const isValidDate = !isNaN(eventDate.getTime());
+                    
+                    if (!isValidDate) {
+                      console.log(`Skipping event with invalid date: "${event.title}" - "${event.date}"`);
+                      return false;
+                    }
+                    
+                    // Compare dates at day level (ignore time)
+                    const eventDay = new Date(eventDate.getFullYear(), eventDate.getMonth(), eventDate.getDate());
+                    return eventDay >= today;
+                  });
+                  
+                  return upcomingEvents.length > 0 ? (
+                    upcomingEvents.slice(0, 3).map((event) => (
+                      <div key={event.id} className="flex items-start justify-between p-4 rounded-lg border border-border hover:bg-muted/50 transition-colors">
+                        <div className="flex-1">
+                          <h4 className="font-semibold text-sm text-foreground mb-1">{event.title}</h4>
+                          <p className="text-xs text-muted-foreground mb-2">{event.clubName}</p>
+                          <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                            <div className="flex items-center gap-1">
+                              <Clock className="h-3 w-3" />
+                              <span>{new Date(event.date).toLocaleDateString()}</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <MapPin className="h-3 w-3" />
+                              <span>{event.location}</span>
+                            </div>
+                            {event.maxParticipants && (
+                              <div className="flex items-center gap-1">
+                                <Users className="h-3 w-3" />
+                                <span>{event.currentParticipants}/{event.maxParticipants}</span>
+                              </div>
+                            )}
+                          </div>
                         </div>
-                        <div className="flex items-center gap-1">
-                          <MapPin className="h-3 w-3" />
-                          <span>{event.location}</span>
-                        </div>
+                        <Button variant="ghost" size="sm" asChild>
+                          <Link href={`/events/${event.id}`}>
+                            <ArrowRight className="h-4 w-4" />
+                          </Link>
+                        </Button>
                       </div>
+                    ))
+                  ) : (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <Calendar className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                      <p>No upcoming events</p>
                     </div>
-                    <Button variant="ghost" size="sm" asChild>
-                      <Link href={`/events/${event.id}`}>
-                        <ArrowRight className="h-4 w-4" />
-                      </Link>
-                    </Button>
-                  </div>
-                ))
+                  );
+                })()
               ) : (
                 <div className="text-center py-8 text-muted-foreground">
                   <Calendar className="h-12 w-12 mx-auto mb-4 opacity-50" />
@@ -328,6 +333,11 @@ const DashboardPage = () => {
                 <CardTitle className="flex items-center gap-2">
                   <Bell className="h-5 w-5" />
                   Recent Announcements
+                  {!announcementsLoading && announcements.length > 0 && (
+                    <Badge variant="secondary" className="ml-2">
+                      {announcements.length}
+                    </Badge>
+                  )}
                 </CardTitle>
                 <CardDescription>Latest updates from your clubs</CardDescription>
               </div>
@@ -336,7 +346,7 @@ const DashboardPage = () => {
               </Button>
             </CardHeader>
             <CardContent className="space-y-4">
-              {loading ? (
+              {announcementsLoading ? (
                 <div className="space-y-3">
                   {[1, 2, 3].map((i) => (
                     <div key={i} className="animate-pulse">
@@ -354,8 +364,8 @@ const DashboardPage = () => {
                         {announcement.priority}
                       </Badge>
                     </div>
-                    <p className="text-xs text-muted-foreground mb-2">{announcement.club.name}</p>
-                    <p className="text-xs text-muted-foreground">{formatTimeAgo(announcement.createdAt)}</p>
+                    <p className="text-xs text-muted-foreground mb-2">{announcement.club}</p>
+                    <p className="text-xs text-muted-foreground">{formatTimeAgo(announcement.date)}</p>
                   </div>
                 ))
               ) : (
@@ -386,13 +396,18 @@ const DashboardPage = () => {
             </Button>
           </CardHeader>
           <CardContent>
-            {loading ? (
+            {clubsLoading ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {[1, 2, 3].map((i) => (
                   <div key={i} className="animate-pulse">
                     <div className="h-32 bg-muted rounded-lg"></div>
                   </div>
                 ))}
+              </div>
+            ) : clubsError ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p className="text-red-500">Error loading clubs: {clubsError}</p>
               </div>
             ) : clubs.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -401,16 +416,38 @@ const DashboardPage = () => {
                     <CardHeader className="pb-3">
                       <div className="flex items-center space-x-3">
                         <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
-                          <Users className="h-5 w-5 text-primary" />
+                          {club.logo ? (
+                            <img src={club.logo} alt={club.name} className="w-8 h-8 rounded" />
+                          ) : (
+                            <Users className="h-5 w-5 text-primary" />
+                          )}
                         </div>
                         <div className="flex-1">
                           <CardTitle className="text-sm">{club.name}</CardTitle>
                           <p className="text-xs text-muted-foreground">{club._count.members} members</p>
+                          <Badge variant="secondary" className="text-xs mt-1">
+                            {club.membershipRole}
+                          </Badge>
                         </div>
                       </div>
                     </CardHeader>
                     <CardContent>
-                      <p className="text-xs text-muted-foreground mb-3">{club.description}</p>
+                      <p className="text-xs text-muted-foreground mb-3 line-clamp-2">
+                        {club.description || 'No description available'}
+                      </p>
+                      <div className="flex items-center gap-2 mb-3">
+                        <Badge variant="outline" className="text-xs">
+                          {club.category}
+                        </Badge>
+                        {!club.isPublic && (
+                          <Badge variant="outline" className="text-xs text-orange-600">
+                            Private
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="text-xs text-muted-foreground mb-3">
+                        Joined {new Date(club.joinedAt).toLocaleDateString()}
+                      </div>
                       <Button variant="outline" size="sm" className="w-full" asChild>
                         <Link href={`/clubs/${club.id}`}>View Club</Link>
                       </Button>
