@@ -256,13 +256,13 @@ const SignUpForm = () => {
           )}
         </Button>
       </form>
-      <div className='mx-auto my-4 flex w-full items-center justify-evenly before:mr-4 before:block before:h-px before:flex-grow before:bg-stone-400 after:ml-4 after:block after:h-px after:flex-grow after:bg-stone-400'>
+      <div className='mx-auto my-4 flex w-full items-center justify-evenly before:mr-4 before:block before:h-px before:flex-grow before:bg-border after:ml-4 after:block after:h-px after:flex-grow after:bg-border'>
         or
       </div>
       <GoogleSignInButton>Sign up with Google</GoogleSignInButton>
-      <p className='text-center text-sm text-gray-600 mt-2'>
+      <p className='text-center text-sm text-muted-foreground mt-2'>
         Already have an account?&nbsp;
-        <Link className='text-blue-500 hover:underline' href='/sign-in'>
+        <Link className='text-primary hover:underline' href='/sign-in'>
           Sign in
         </Link>
       </p>

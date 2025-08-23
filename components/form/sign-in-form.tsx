@@ -100,7 +100,7 @@ const SignInForm = () => {
                   />
                 </FormControl>
                   <Link 
-                    className='text-blue-500 hover:underline text-sm' 
+                    className='text-primary hover:underline text-sm' 
                     href='/forgot-password'
                   >
                     Forgot password?
@@ -114,13 +114,13 @@ const SignInForm = () => {
           Sign in
         </Button>
       </form>
-      <div className='mx-auto my-4 flex w-full items-center justify-evenly before:mr-4 before:block before:h-px before:flex-grow before:bg-stone-400 after:ml-4 after:block after:h-px after:flex-grow after:bg-stone-400'>
+      <div className='mx-auto my-4 flex w-full items-center justify-evenly before:mr-4 before:block before:h-px before:flex-grow before:bg-border after:ml-4 after:block after:h-px after:flex-grow after:bg-border'>
         or
       </div>
       <GoogleSignInButton>Sign in with Google</GoogleSignInButton>
-      <p className='text-center text-sm text-gray-600 mt-2'>
+      <p className='text-center text-sm text-muted-foreground mt-2'>
         Don't have an account?&nbsp;
-        <Link className='text-blue-500 hover:underline' href='/sign-up'>
+        <Link className='text-primary hover:underline' href='/sign-up'>
           Sign up
         </Link>
       </p>
