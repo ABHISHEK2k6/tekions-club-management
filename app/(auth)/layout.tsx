@@ -12,7 +12,7 @@ const AuthLayout: React.FC<AuthLayoutProps> = ({ children }) => {
   const { theme } = useTheme();
   
   return (
-    <div className={`min-h-screen ${theme === 'dark' ? 'bg-black' : 'bg-gray-50'} flex flex-col`}>
+    <div className="min-h-screen bg-background flex flex-col">
       <div className="flex-1 flex items-center justify-center py-16">
         <motion.div 
           initial={{ opacity: 0, y: 20 }}

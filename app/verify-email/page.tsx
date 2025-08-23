@@ -55,12 +55,12 @@ function VerifyEmailContent() {
           {status === 'loading' && (
             <>
               <div className="mb-6">
-                <Loader2 className="w-16 h-16 mx-auto text-blue-500 animate-spin" />
+                <Loader2 className="w-16 h-16 mx-auto text-primary animate-spin" />
               </div>
-              <h1 className="text-2xl font-bold text-gray-900 mb-4">
+              <h1 className="text-2xl font-bold text-foreground mb-4">
                 Verifying Your Email
               </h1>
-              <p className="text-gray-600">
+              <p className="text-muted-foreground">
                 Please wait while we verify your email address...
               </p>
             </>

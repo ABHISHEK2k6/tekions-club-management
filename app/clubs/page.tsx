@@ -148,14 +148,14 @@ const ClubsPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       <PortalNavbar />
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Tekions</h1>
-          <p className="text-gray-600 mt-2">
+          <h1 className="text-3xl font-bold text-foreground">Tekions</h1>
+          <p className="text-muted-foreground mt-2">
             Discover and join clubs that match your interests and passions.
           </p>
         </div>
@@ -163,7 +163,7 @@ const ClubsPage = () => {
         {/* Filters */}
         <div className="flex flex-col sm:flex-row gap-4 mb-8">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
             <Input
               placeholder="Search clubs by name, description, or tags..."
               value={searchTerm}
@@ -175,7 +175,7 @@ const ClubsPage = () => {
             <select
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-3 py-2 border border-border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary bg-background text-foreground"
             >
               {categories.map((category) => (
                 <option key={category} value={category}>
@@ -205,7 +205,7 @@ const ClubsPage = () => {
           <>
             {/* Results count */}
             <div className="mb-6">
-              <p className="text-gray-600">
+              <p className="text-muted-foreground">
                 Showing {clubs.length} clubs
               </p>
             </div>
@@ -266,7 +266,7 @@ const ClubsPage = () => {
                     </CardDescription>
 
                     {/* Stats */}
-                    <div className="grid grid-cols-2 gap-4 mb-4 text-sm text-gray-600">
+                    <div className="grid grid-cols-2 gap-4 mb-4 text-sm text-muted-foreground">
                       <div className="flex items-center gap-1">
                         <Users className="h-3 w-3" />
                         <span>{club._count.members} members</span>
@@ -298,9 +298,9 @@ const ClubsPage = () => {
             {/* No results */}
             {clubs.length === 0 && !loading && (
               <div className="text-center py-12">
-                <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">No clubs found</h3>
-                <p className="text-gray-600 mb-4">
+                <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-foreground mb-2">No clubs found</h3>
+                <p className="text-muted-foreground mb-4">
                   Try adjusting your search terms or filters to find clubs that match your interests.
                 </p>
                 <Button asChild>
@@ -311,12 +311,12 @@ const ClubsPage = () => {
 
             {/* Call to action */}
             <div className="mt-12 text-center">
-              <Card className="bg-blue-50 border-blue-200">
+              <Card className="bg-muted border-border">
                 <CardContent className="py-8">
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                  <h3 className="text-xl font-semibold text-foreground mb-2">
                     Don't see a club you're interested in?
                   </h3>
-                  <p className="text-gray-600 mb-4">
+                  <p className="text-muted-foreground mb-4">
                     Start your own club and bring together students who share your passion.
                   </p>
                   <Button asChild>

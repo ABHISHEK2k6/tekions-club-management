@@ -60,17 +60,17 @@ export default function Home() {
               initial={{ y: -20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.3 }}
-              className="text-5xl md:text-6xl font-bold text-gray-900 leading-tight"
+              className="text-5xl md:text-6xl font-bold text-foreground leading-tight"
             >
               Connect, Engage, and 
-              <span className="text-blue-600"> Lead</span>
+              <span className="text-primary"> Lead</span>
             </motion.h1>
             
             <motion.p
               initial={{ y: -20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.4 }}
-              className="text-xl text-gray-600 max-w-2xl mx-auto"
+              className="text-xl text-muted-foreground max-w-2xl mx-auto"
             >
               Join student clubs, discover exciting events, and build lasting connections. 
               Your journey to campus leadership starts here.
