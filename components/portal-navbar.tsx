@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
+import { ThemeToggle } from '@/components/theme-toggle';
 import { 
   Users, 
   Calendar, 
@@ -22,16 +23,16 @@ const PortalNavbar = () => {
   }
 
   return (
-    <nav className="bg-white shadow-sm border-b sticky top-0 z-50">
+    <nav className="bg-background shadow-sm border-b border-border sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo and Title */}
           <div className="flex items-center space-x-4">
             <Link href="/dashboard" className="flex items-center space-x-2">
-              <div className="bg-blue-600 text-white p-2 rounded-lg">
+              <div className="bg-primary text-primary-foreground p-2 rounded-lg">
                 <Users className="h-6 w-6" />
               </div>
-              <span className="text-xl font-bold text-gray-900">
+              <span className="text-xl font-bold text-foreground">
                 Tekions
               </span>
             </Link>
@@ -41,7 +42,7 @@ const PortalNavbar = () => {
           <div className="hidden md:flex items-center space-x-6">
             <Link 
               href="/dashboard" 
-              className="flex items-center space-x-1 text-gray-700 hover:text-blue-600 transition-colors"
+              className="flex items-center space-x-1 text-muted-foreground hover:text-primary transition-colors"
             >
               <Home className="h-4 w-4" />
               <span>Dashboard</span>
@@ -49,7 +50,7 @@ const PortalNavbar = () => {
             
             <Link 
               href="/clubs" 
-              className="flex items-center space-x-1 text-gray-700 hover:text-blue-600 transition-colors"
+              className="flex items-center space-x-1 text-muted-foreground hover:text-primary transition-colors"
             >
               <Users className="h-4 w-4" />
               <span>Clubs</span>
@@ -57,7 +58,7 @@ const PortalNavbar = () => {
             
             <Link 
               href="/events" 
-              className="flex items-center space-x-1 text-gray-700 hover:text-blue-600 transition-colors"
+              className="flex items-center space-x-1 text-muted-foreground hover:text-primary transition-colors"
             >
               <Calendar className="h-4 w-4" />
               <span>Events</span>
@@ -65,7 +66,7 @@ const PortalNavbar = () => {
             
             <Link 
               href="/announcements" 
-              className="flex items-center space-x-1 text-gray-700 hover:text-blue-600 transition-colors"
+              className="flex items-center space-x-1 text-muted-foreground hover:text-primary transition-colors"
             >
               <Megaphone className="h-4 w-4" />
               <span>Announcements</span>
@@ -73,7 +74,7 @@ const PortalNavbar = () => {
             
             <Link 
               href="/leaderboard" 
-              className="flex items-center space-x-1 text-gray-700 hover:text-blue-600 transition-colors"
+              className="flex items-center space-x-1 text-muted-foreground hover:text-primary transition-colors"
             >
               <BarChart3 className="h-4 w-4" />
               <span>Leaderboard</span>
@@ -82,6 +83,7 @@ const PortalNavbar = () => {
 
           {/* Right side actions */}
           <div className="flex items-center space-x-4">
+            <ThemeToggle />
             <Button 
               variant="outline" 
               size="sm" 
