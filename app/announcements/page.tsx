@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSession } from 'next-auth/react';
+import { useSearchParams } from 'next/navigation';
 import { redirect } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -23,14 +24,56 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 
-const AnnouncementsPage = () => {
+// Component that uses useSearchParams
+const AnnouncementsContent = () => {
   const { data: session, status } = useSession();
   const { announcements, loading, error } = useAnnouncements();
+  const searchParams = useSearchParams();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedPriority, setSelectedPriority] = useState('all');
+  const [highlightedId, setHighlightedId] = useState<string | null>(null);
+
+  // Get the highlight parameter from URL
+  useEffect(() => {
+    const highlight = searchParams.get('highlight');
+    if (highlight) {
+      setHighlightedId(highlight);
+    }
+  }, [searchParams]);
+
+  // Auto-scroll to highlighted announcement
+  useEffect(() => {
+    if (highlightedId && announcements.length > 0) {
+      const timer = setTimeout(() => {
+        const element = document.getElementById(`announcement-${highlightedId}`);
+        if (element) {
+          element.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'center' 
+          });
+          // Add a brief highlight effect
+          element.classList.add('ring-2', 'ring-blue-500', 'ring-opacity-50');
+          setTimeout(() => {
+            element.classList.remove('ring-2', 'ring-blue-500', 'ring-opacity-50');
+          }, 3000);
+        }
+      }, 500); // Wait for the page to render
+      return () => clearTimeout(timer);
+    }
+  }, [highlightedId, announcements]);
 
   if (status === 'loading') {
-    return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen">
+        <img
+          src="/UI/dino-loader.gif"
+          alt="Loading..."
+          className="w-32 h-32 mb-4"
+          style={{ imageRendering: 'pixelated' }}
+        />
+        <span className="text-gray-600">Loading announcements...</span>
+      </div>
+    );
   }
 
   if (!session) {
@@ -44,8 +87,13 @@ const AnnouncementsPage = () => {
         <PortalNavbar />
         <div className="container mx-auto px-4 py-8">
           <div className="flex items-center justify-center min-h-[400px]">
-            <div className="flex items-center space-x-3">
-              <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
+            <div className="flex flex-col items-center space-y-3">
+              <img
+                src="/UI/dino-loader.gif"
+                alt="Loading..."
+                className="w-28 h-28"
+                style={{ imageRendering: 'pixelated' }}
+              />
               <span className="text-lg text-gray-600">Loading announcements...</span>
             </div>
           </div>
@@ -187,7 +235,10 @@ const AnnouncementsPage = () => {
           {filteredAnnouncements.map((announcement) => (
             <Card 
               key={announcement.id} 
-              className="hover:shadow-lg transition-shadow border-l-4 border-l-blue-500 bg-blue-50/30"
+              id={`announcement-${announcement.id}`}
+              className={`hover:shadow-lg transition-all border-l-4 border-l-blue-500 bg-blue-50/30 ${
+                highlightedId === announcement.id ? 'ring-2 ring-blue-500 bg-blue-100/50' : ''
+              }`}
             >
               <CardHeader>
                 <div className="flex items-start justify-between">
@@ -296,6 +347,27 @@ const AnnouncementsPage = () => {
       </div>
     </div>
     </Loader>
+  );
+};
+
+// Main component that wraps the content in Suspense
+const AnnouncementsPage = () => {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+        <PortalNavbar />
+        <div className="container mx-auto px-4 py-8">
+          <div className="flex items-center justify-center min-h-[400px]">
+            <div className="flex items-center space-x-3">
+              <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
+              <span className="text-lg text-gray-600">Loading announcements...</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    }>
+      <AnnouncementsContent />
+    </Suspense>
   );
 };
 

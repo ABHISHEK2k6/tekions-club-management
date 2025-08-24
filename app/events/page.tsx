@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSession } from 'next-auth/react';
+import { useSearchParams } from 'next/navigation';
 import { redirect } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -41,23 +42,91 @@ interface Event {
   registrationLink?: string;
 }
 
-const EventsPage = () => {
+// Component that uses useSearchParams
+const EventsContent = () => {
   const { data: session, status } = useSession();
   const { events, loading, error, isDemo } = useEvents();
+  const searchParams = useSearchParams();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedFilter, setSelectedFilter] = useState('upcoming'); // default to upcoming events
+  const [highlightedId, setHighlightedId] = useState<string | null>(null);
+  const [clubFilter, setClubFilter] = useState<string | null>(null);
+  const [clubName, setClubName] = useState<string>('');
+
+  // Get the highlight, clubId, and clubName parameters from URL
+  useEffect(() => {
+    const highlight = searchParams.get('highlight');
+    const clubId = searchParams.get('clubId');
+    const clubNameParam = searchParams.get('clubName');
+    
+    if (highlight) {
+      setHighlightedId(highlight);
+    }
+    
+    if (clubNameParam) {
+      // Filter by club name directly
+      setClubFilter(clubNameParam);
+      setClubName(clubNameParam);
+    } else if (clubId) {
+      // Fallback: filter by club ID and fetch club name
+      setClubFilter(clubId);
+      fetchClubName(clubId);
+    }
+  }, [searchParams]);
+
+  const fetchClubName = async (clubId: string) => {
+    try {
+      const response = await fetch(`/api/clubs/${clubId}`);
+      if (response.ok) {
+        const clubData = await response.json();
+        setClubName(clubData.name);
+      }
+    } catch (error) {
+      console.error('Error fetching club name:', error);
+    }
+  };
+
+  // Auto-scroll to highlighted event
+  useEffect(() => {
+    if (highlightedId && events.length > 0) {
+      const timer = setTimeout(() => {
+        const element = document.getElementById(`event-${highlightedId}`);
+        if (element) {
+          element.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'center' 
+          });
+          // Add a brief highlight effect
+          element.classList.add('ring-2', 'ring-green-500', 'ring-opacity-50');
+          setTimeout(() => {
+            element.classList.remove('ring-2', 'ring-green-500', 'ring-opacity-50');
+          }, 3000);
+        }
+      }, 500); // Wait for the page to render
+      return () => clearTimeout(timer);
+    }
+  }, [highlightedId, events]);
+
+  if (!session) {
+    redirect('/sign-in');
+  }
 
   // Extract unique categories from events
   const categories = ['all', ...Array.from(new Set(events.map(event => event.category).filter(Boolean)))];
 
-  // Filter events based on search and category
+  // Filter events based on search, category, and club
   const filteredEvents = events.filter(event => {
     const matchesSearch = event.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          event.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          event.clubName.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesCategory = selectedCategory === 'all' || event.category === selectedCategory;
+    
+    // Add club filtering - handle both clubId and clubName
+    const matchesClub = !clubFilter || 
+                       event.clubId === clubFilter || 
+                       event.clubName.toLowerCase() === clubFilter.toLowerCase();
     
     const now = new Date();
     const eventDate = new Date(event.date);
@@ -74,7 +143,7 @@ const EventsPage = () => {
         matchesFilter = true;
     }
     
-    return matchesSearch && matchesCategory && matchesFilter;
+    return matchesSearch && matchesCategory && matchesFilter && matchesClub;
   });
 
   if (status === 'loading') {
@@ -99,10 +168,38 @@ const EventsPage = () => {
         <div className="mb-8">
           <h1 className="text-3xl font-bold page-title">
             Events
+            {clubName && (
+              <span className="text-xl font-normal text-muted-foreground ml-2">
+                - {clubName}
+              </span>
+            )}
           </h1>
           <p className="text-muted-foreground mt-2">
-            Discover exciting events and activities happening around campus.
+            {clubFilter 
+              ? `Showing events from ${clubName || 'this club'}`
+              : 'Discover exciting events and activities happening around campus.'
+            }
           </p>
+          {clubFilter && (
+            <div className="mt-4">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setClubFilter(null);
+                  setClubName('');
+                  // Update URL to remove club parameters
+                  const url = new URL(window.location.href);
+                  url.searchParams.delete('clubId');
+                  url.searchParams.delete('clubName');
+                  window.history.replaceState({}, '', url.toString());
+                }}
+                className="text-sm"
+              >
+                Show All Events
+              </Button>
+            </div>
+          )}
         </div>
 
         {/* Demo Data Warning */}
@@ -201,7 +298,13 @@ const EventsPage = () => {
               const isUpcoming = eventDate > now;
               
               return (
-                <Card key={`events-page-${event.id}-${index}`} className="hover:shadow-lg transition-shadow group">
+                <Card 
+                  key={`events-page-${event.id}-${index}`} 
+                  id={`event-${event.id}`}
+                  className={`hover:shadow-lg transition-all group ${
+                    highlightedId === event.id ? 'ring-2 ring-green-500 bg-green-50/50' : ''
+                  }`}
+                >
                   <CardHeader className="pb-3">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
@@ -336,6 +439,32 @@ const EventsPage = () => {
       </div>
     </div>
     </Loader>
+  );
+};
+
+// Main component that wraps the content in Suspense
+const EventsPage = () => {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-100">
+        <PortalNavbar />
+        <div className="container mx-auto px-4 py-8">
+          <div className="flex items-center justify-center min-h-[400px]">
+            <div className="flex flex-col items-center space-y-3">
+              <img
+                src="/UI/dino-loader.gif"
+                alt="Loading..."
+                className="w-28 h-28"
+                style={{ imageRendering: 'pixelated' }}
+              />
+              <span className="text-lg text-gray-600">Loading events...</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    }>
+      <EventsContent />
+    </Suspense>
   );
 };
 

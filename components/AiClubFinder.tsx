@@ -12,8 +12,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Sparkles, Users, Calendar, Star, ExternalLink } from 'lucide-react';
-import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
+import MiniLoader from '@/components/ui/mini-loader';
 
 interface ClubSuggestion {
   clubName: string;
@@ -93,20 +93,39 @@ export default function AiClubFinder() {
             <Sparkles className="h-6 w-6 text-blue-600" />
           </div>
           <div>
-            <CardTitle className="mini-heading text-lg">AI Club Finder</CardTitle>
+            <CardTitle className="mini-heading text-lg">🤖 Ai Club Finder</CardTitle>
             <CardDescription>
-              Tell us your interests, and our AI will analyze all clubs in our database to find your perfect match based on descriptions, categories, tags, and activities!
+              Tell us your interests (e.g., "cybersecurity", "dance", "programming", "photography"), and our AI will analyze all clubs to find your perfect match based on categories, descriptions, and activities!
             </CardDescription>
           </div>
         </div>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
+          {/* Suggested interests */}
+          <div className="mb-3">
+            <p className="text-sm text-gray-600 mb-2">Popular interests:</p>
+            <div className="flex flex-wrap gap-2">
+              {['cybersecurity', 'programming', 'photography', 'dance', 'business', 'gaming'].map((example) => (
+                <Button
+                  key={example}
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setInterest(example)}
+                  className="text-xs px-2 py-1 h-7"
+                  disabled={loading}
+                >
+                  {example}
+                </Button>
+              ))}
+            </div>
+          </div>
+          
           <div className="flex gap-2">
             <Input
               value={interest}
               onChange={(e) => setInterest(e.target.value)}
-              placeholder="e.g., 'web development', 'photography', 'environmental activism', 'coding'"
+              placeholder="e.g., 'cybersecurity', 'web development', 'photography', 'environmental activism'"
               disabled={loading}
               onKeyDown={(e) => e.key === 'Enter' && handleGenerateSuggestion()}
               className="flex-1"
@@ -118,11 +137,9 @@ export default function AiClubFinder() {
           </div>
 
           {loading && (
-             <div className="space-y-3 pt-4">
-                <Skeleton className="h-4 w-3/4" />
-                <Skeleton className="h-4 w-full" />
-                <Skeleton className="h-4 w-1/2" />
-                <Skeleton className="h-20 w-full" />
+             <div className="flex justify-center items-center pt-4 pb-2">
+                <MiniLoader size="lg" />
+                <span className="ml-3 text-gray-600">Searching for perfect club match...</span>
             </div>
           )}
 

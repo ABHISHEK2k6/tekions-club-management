@@ -7,9 +7,73 @@ const isAiConfigured = process.env.GOOGLE_GENAI_API_KEY && process.env.GOOGLE_GE
 // Enhanced fallback that can work with database clubs
 export const fallbackSuggestClub = async (interest: string, clubs?: any[]) => {
   const clubsToSearch = clubs && clubs.length > 0 ? clubs : allClubs;
-  const keywords = interest.toLowerCase();
+  const keywords = interest.toLowerCase().trim();
   
-  // Score each club based on keyword matching
+  // Enhanced keyword-to-category mapping with more comprehensive coverage
+  const interestMapping = {
+    // Technology & Programming
+    'cybersecurity': ['technology', 'security', 'cyber', 'information security', 'ethical hacking'],
+    'security': ['technology', 'security', 'cyber', 'information security'],
+    'hacking': ['technology', 'security', 'cyber', 'ethical hacking'],
+    'programming': ['technology', 'programming', 'coding', 'software', 'development'],
+    'coding': ['technology', 'programming', 'coding', 'software', 'development'],
+    'software': ['technology', 'programming', 'software', 'development'],
+    'tech': ['technology', 'programming', 'software', 'innovation'],
+    'ai': ['technology', 'artificial intelligence', 'machine learning', 'data science'],
+    'ml': ['technology', 'machine learning', 'data science', 'artificial intelligence'],
+    'data science': ['technology', 'data science', 'analytics', 'machine learning'],
+    'web dev': ['technology', 'web development', 'programming', 'frontend', 'backend'],
+    'mobile': ['technology', 'mobile development', 'app development', 'programming'],
+    
+    // Business & Entrepreneurship
+    'business': ['business', 'entrepreneurship', 'management', 'finance'],
+    'entrepreneur': ['entrepreneurship', 'business', 'startup', 'innovation'],
+    'startup': ['entrepreneurship', 'business', 'startup', 'innovation'],
+    'finance': ['business', 'finance', 'accounting', 'economics'],
+    'marketing': ['business', 'marketing', 'digital marketing', 'branding'],
+    
+    // Arts & Creative
+    'photography': ['arts', 'photography', 'visual arts', 'creative'],
+    'photo': ['arts', 'photography', 'visual arts'],
+    'art': ['arts', 'visual arts', 'creative', 'painting', 'drawing'],
+    'music': ['music', 'arts', 'performance', 'creative'],
+    'dance': ['arts', 'dance', 'performance', 'cultural'],
+    'theater': ['arts', 'theater', 'drama', 'performance'],
+    'creative': ['arts', 'creative', 'design', 'innovation'],
+    'design': ['arts', 'design', 'creative', 'visual arts'],
+    
+    // Sports & Fitness
+    'sports': ['sports', 'athletics', 'fitness', 'recreation'],
+    'fitness': ['sports', 'fitness', 'health', 'wellness'],
+    'basketball': ['sports', 'basketball', 'athletics'],
+    'football': ['sports', 'football', 'athletics'],
+    'cricket': ['sports', 'cricket', 'athletics'],
+    'badminton': ['sports', 'badminton', 'athletics'],
+    
+    // Academic & Professional
+    'academic': ['academic', 'education', 'research', 'study'],
+    'research': ['academic', 'research', 'innovation', 'science'],
+    'ieee': ['technology', 'engineering', 'electronics', 'professional development'],
+    'engineering': ['technology', 'engineering', 'innovation', 'academic'],
+    
+    // Social & Community
+    'social service': ['social service', 'community', 'volunteer', 'humanitarian'],
+    'volunteer': ['social service', 'community', 'volunteer', 'service'],
+    'community': ['community', 'social service', 'cultural', 'volunteer'],
+    'cultural': ['cultural', 'arts', 'community', 'heritage'],
+    
+    // Gaming & Entertainment
+    'gaming': ['gaming', 'esports', 'entertainment', 'technology'],
+    'esports': ['gaming', 'esports', 'competitive gaming', 'technology'],
+    'games': ['gaming', 'entertainment', 'recreation'],
+    
+    // Others
+    'debate': ['academic', 'communication', 'public speaking', 'debate'],
+    'environment': ['environmental', 'sustainability', 'green', 'conservation'],
+    'leadership': ['leadership', 'professional development', 'management'],
+  };
+
+  // Score each club based on advanced matching
   const scoredClubs = clubsToSearch.map(club => {
     let score = 0;
     const clubName = club.name.toLowerCase();
@@ -17,54 +81,89 @@ export const fallbackSuggestClub = async (interest: string, clubs?: any[]) => {
     const clubCategory = (club.category || '').toLowerCase();
     const clubTags = club.tags || [];
     
-    // Direct name matching
-    if (clubName.includes(keywords)) score += 10;
-    
-    // Description matching
-    if (clubDescription.includes(keywords)) score += 8;
-    
-    // Category matching
-    if (clubCategory.includes(keywords)) score += 6;
-    
-    // Tag matching
-    if (clubTags.some((tag: string) => tag.toLowerCase().includes(keywords))) score += 7;
-    
-    // Keyword-based scoring
-    const keywordMatches = [
-      { words: ['photo', 'camera', 'picture', 'image'], categories: ['arts', 'media', 'photography'] },
-      { words: ['code', 'program', 'software', 'tech', 'computer', 'dev'], categories: ['technology', 'programming', 'computer'] },
-      { words: ['game', 'gaming', 'video', 'esports'], categories: ['gaming', 'esports', 'entertainment'] },
-      { words: ['music', 'sing', 'instrument', 'band'], categories: ['music', 'performance', 'arts'] },
-      { words: ['hike', 'outdoor', 'nature', 'adventure'], categories: ['outdoor', 'sports', 'adventure'] },
-      { words: ['art', 'paint', 'draw', 'creative'], categories: ['arts', 'creative', 'visual'] },
-      { words: ['act', 'theater', 'drama', 'performance'], categories: ['performance', 'drama', 'theatre'] },
-      { words: ['debate', 'speak', 'argument', 'discussion'], categories: ['debate', 'academic', 'communication'] },
-      { words: ['environment', 'green', 'sustain', 'eco'], categories: ['environmental', 'sustainability', 'green'] },
-      { words: ['business', 'entrepreneur', 'startup', 'finance'], categories: ['business', 'entrepreneurship', 'finance'] },
-      { words: ['volunteer', 'service', 'help', 'community'], categories: ['service', 'community', 'volunteer'] },
-    ];
-    
-    for (const match of keywordMatches) {
-      if (match.words.some(word => keywords.includes(word))) {
-        if (match.categories.some(cat => clubCategory.includes(cat) || clubName.includes(cat))) {
-          score += 5;
-        }
+    // Find matching categories for the user's interest
+    const matchingCategories = [];
+    for (const [key, categories] of Object.entries(interestMapping)) {
+      if (keywords.includes(key) || key.includes(keywords)) {
+        matchingCategories.push(...categories);
       }
     }
     
-    return { ...club, score };
+    // Also split interest into individual words for broader matching
+    const interestWords = keywords.split(/[\s,]+/).filter(word => word.length > 2);
+    
+    // 1. EXACT INTEREST MATCH (highest priority)
+    if (clubName.includes(keywords) || clubDescription.includes(keywords)) {
+      score += 50;
+    }
+    
+    // 2. CATEGORY RELEVANCE MATCHING
+    for (const category of matchingCategories) {
+      if (clubName.includes(category) || clubDescription.includes(category) || clubCategory.includes(category)) {
+        score += 30;
+      }
+    }
+    
+    // 3. INDIVIDUAL WORD MATCHING
+    for (const word of interestWords) {
+      if (clubName.includes(word)) score += 15;
+      if (clubDescription.includes(word)) score += 10;
+      if (clubCategory.includes(word)) score += 12;
+      if (clubTags.some((tag: string) => tag.toLowerCase().includes(word))) score += 8;
+    }
+    
+    // 4. SPECIAL TECHNOLOGY MATCHING (for tech-related queries)
+    const techKeywords = ['cyber', 'security', 'tech', 'programming', 'coding', 'software', 'ai', 'ml', 'data'];
+    const isTechInterest = techKeywords.some(keyword => keywords.includes(keyword));
+    const isTechClub = techKeywords.some(keyword => 
+      clubName.includes(keyword) || clubDescription.includes(keyword) || clubCategory.includes(keyword)
+    );
+    
+    if (isTechInterest && isTechClub) {
+      score += 25;
+    }
+    
+    // 5. PENALIZE COMPLETELY UNRELATED CLUBS
+    const isCompletelyUnrelated = (
+      (keywords.includes('cyber') || keywords.includes('security')) && 
+      (clubName.includes('dance') || clubName.includes('music') || clubCategory.includes('arts'))
+    ) || (
+      keywords.includes('dance') && 
+      (clubName.includes('tech') || clubCategory.includes('technology'))
+    );
+    
+    if (isCompletelyUnrelated) {
+      score = Math.max(0, score - 40);
+    }
+    
+    // 6. BOOST FOR EXACT CATEGORY MATCHES
+    if (matchingCategories.some(cat => clubCategory === cat)) {
+      score += 20;
+    }
+    
+    return { ...club, score, matchingCategories };
   });
   
   // Sort by score and get the best match
   scoredClubs.sort((a, b) => b.score - a.score);
   const bestMatch = scoredClubs[0];
   
-  const matchScore = Math.min(Math.max(Math.round(bestMatch.score / 2), 1), 10);
+  // Calculate match score (1-10) with better scaling
+  const matchScore = Math.min(Math.max(Math.round(bestMatch.score / 10), 1), 10);
+  
+  // Generate more contextual reason
+  let reason = `Perfect match for "${interest}"! `;
+  if (bestMatch.matchingCategories && bestMatch.matchingCategories.length > 0) {
+    reason += `This club aligns with your interest in ${bestMatch.matchingCategories.slice(0, 2).join(' and ')}. `;
+  }
+  if (bestMatch.description) {
+    reason += bestMatch.description.substring(0, 120) + '...';
+  }
   
   return {
     clubName: bestMatch.name,
     clubId: bestMatch.id || 'unknown',
-    reason: `Based on your interest in "${interest}", this club seems like a perfect match! ${bestMatch.description ? bestMatch.description.substring(0, 100) + '...' : ''}`,
+    reason,
     matchScore
   };
 };

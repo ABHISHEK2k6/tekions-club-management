@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Wand2 } from 'lucide-react';
 import { generateSuggestion } from '@/lib/ai/flows/generateSuggestion';
-import { Skeleton } from '@/components/ui/skeleton';
+import MiniLoader from '@/components/ui/mini-loader';
 
 export default function AiSuggestions() {
   const [topic, setTopic] = useState('');
@@ -69,10 +69,9 @@ export default function AiSuggestions() {
           </div>
 
           {loading && (
-             <div className="space-y-2 pt-4">
-                <Skeleton className="h-4 w-3/4" />
-                <Skeleton className="h-4 w-full" />
-                <Skeleton className="h-4 w-1/2" />
+             <div className="flex justify-center items-center pt-4 pb-2">
+                <MiniLoader size="lg" />
+                <span className="ml-3 text-gray-600">Generating AI suggestions...</span>
             </div>
           )}
 

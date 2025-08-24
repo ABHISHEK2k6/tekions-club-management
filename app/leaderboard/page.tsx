@@ -26,7 +26,17 @@ const LeaderboardPage = () => {
   const [activeTab, setActiveTab] = useState('individual');
 
   if (status === 'loading') {
-    return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen">
+        <img
+          src="/UI/dino-loader.gif"
+          alt="Loading..."
+          className="w-32 h-32 mb-4"
+          style={{ imageRendering: 'pixelated' }}
+        />
+        <span className="text-gray-600">Loading leaderboard...</span>
+      </div>
+    );
   }
 
   if (!session) {

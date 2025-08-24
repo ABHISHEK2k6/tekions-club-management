@@ -58,7 +58,11 @@ export async function GET(request: Request) {
         _count: {
           select: {
             members: true,
-            events: true,
+            events: {
+              where: {
+                isActive: true,
+              },
+            },
           },
         },
       },

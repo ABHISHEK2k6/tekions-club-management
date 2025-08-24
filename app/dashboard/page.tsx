@@ -140,8 +140,14 @@ const DashboardPage = () => {
 
   if (status === 'loading') {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <MiniLoader size="lg" />
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center">
+        <img
+          src="/UI/dino-loader.gif"
+          alt="Loading..."
+          className="w-32 h-32 mb-4"
+          style={{ imageRendering: 'pixelated' }}
+        />
+        <span className="text-gray-600">Loading dashboard...</span>
       </div>
     );
   }
@@ -264,13 +270,9 @@ const DashboardPage = () => {
               </CardHeader>
               <CardContent className="space-y-4">
                 {loading || eventsLoading ? (
-                  <div className="space-y-3">
-                    {[1, 2, 3].map((i) => (
-                      <div key={i} className="animate-pulse">
-                        <div className="h-4 bg-muted rounded w-3/4 mb-2"></div>
-                        <div className="h-3 bg-muted rounded w-1/2"></div>
-                      </div>
-                    ))}
+                  <div className="flex justify-center items-center py-8">
+                    <MiniLoader size="md" />
+                    <span className="ml-3 text-gray-600">Loading events...</span>
                   </div>
                 ) : eventsError ? (
                   <div className="text-center py-8 text-muted-foreground">
@@ -365,13 +367,9 @@ const DashboardPage = () => {
               </CardHeader>
               <CardContent className="space-y-4">
                 {announcementsLoading ? (
-                  <div className="space-y-3">
-                    {[1, 2, 3].map((i) => (
-                      <div key={i} className="animate-pulse">
-                        <div className="h-4 bg-muted rounded w-3/4 mb-2"></div>
-                        <div className="h-3 bg-muted rounded w-1/2"></div>
-                      </div>
-                    ))}
+                  <div className="flex justify-center items-center py-8">
+                    <MiniLoader size="md" />
+                    <span className="ml-3 text-gray-600">Loading announcements...</span>
                   </div>
                 ) : announcements.length > 0 ? (
                   announcements.slice(0, 3).map((announcement) => (
@@ -417,12 +415,9 @@ const DashboardPage = () => {
             </CardHeader>
             <CardContent>
               {clubsLoading ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {[1, 2, 3].map((i) => (
-                    <div key={i} className="animate-pulse">
-                      <div className="h-32 bg-muted rounded-lg"></div>
-                    </div>
-                  ))}
+                <div className="flex justify-center items-center py-8">
+                  <MiniLoader size="md" />
+                  <span className="ml-3 text-gray-600">Loading clubs...</span>
                 </div>
               ) : clubsError ? (
                 <div className="text-center py-8 text-muted-foreground">

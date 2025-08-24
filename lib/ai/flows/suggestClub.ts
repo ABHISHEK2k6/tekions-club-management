@@ -30,15 +30,21 @@ const clubSuggestionPrompt = ai.definePrompt({
   name: 'clubSuggestionPrompt',
   input: {schema: z.object({ interest: z.string(), clubs: z.any() })},
   output: {schema: SuggestClubOutputSchema},
-  prompt: `You are an expert student advisor. A student has expressed an interest in "{{interest}}".
-  
-  Based on the following list of available clubs, please suggest the BEST fitting club for them. Consider:
-  - Club name and description alignment with the interest
-  - Club category relevance
-  - Club tags that might match the interest
-  - Requirements and activities that align with the user's interest
-  
-  Provide the club ID, name, a compelling reason why it's a great match, and a match score (1-10).
+  prompt: `You are an expert student advisor with deep knowledge of club categorization and student interests. A student has expressed an interest in "{{interest}}".
+
+  CRITICAL MATCHING RULES:
+  1. PRIORITIZE EXACT SEMANTIC MATCHES - If someone asks for "cybersecurity", suggest technology/security clubs, NOT arts/dance clubs
+  2. ANALYZE CONTEXT - Consider the domain and field of the interest
+  3. MATCH CATEGORIES APPROPRIATELY:
+     - "cybersecurity/security/hacking" → Technology/Engineering clubs
+     - "programming/coding/software" → Technology/Programming clubs  
+     - "dance/music/art" → Arts/Cultural clubs
+     - "sports/fitness" → Sports/Athletic clubs
+     - "business/entrepreneur" → Business/Professional clubs
+  4. PENALIZE COMPLETELY UNRELATED SUGGESTIONS (e.g., dance club for cybersecurity interest)
+  5. Consider club activities, not just names
+
+  Based on the following list of available clubs, suggest the MOST RELEVANT club that actually matches their interest domain.
 
   Available Clubs:
   {{#each clubs}}
@@ -53,7 +59,7 @@ const clubSuggestionPrompt = ai.definePrompt({
   ---
   {{/each}}
   
-  Return the single best match with the highest relevance to "{{interest}}".`,
+  Return the BEST SEMANTIC MATCH with highest domain relevance to "{{interest}}". If no good match exists, choose the closest relevant option but give it a low match score (1-3).`,
 });
 
 const suggestClubFlow = ai.defineFlow(

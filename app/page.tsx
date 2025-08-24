@@ -58,11 +58,14 @@ export default function Home() {
 
   if (status === "loading") {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <MiniLoader size="lg" className="mx-auto" />
-          <p className="mt-4 text-muted-foreground">Loading...</p>
-        </div>
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center">
+        <img
+          src="/UI/dino-loader.gif"
+          alt="Loading..."
+          className="w-32 h-32 mb-4"
+          style={{ imageRendering: 'pixelated' }}
+        />
+        <p className="mt-4 text-muted-foreground">Loading...</p>
       </div>
     );
   }

@@ -106,6 +106,22 @@ const ClubsPage = () => {
     }
   };
 
+  const fetchEventsFromSheets = async () => {
+    try {
+      const response = await fetch('/api/events/csv');
+      if (response.ok) {
+        const data = await response.json();
+        // The API returns { events: [...] }, not directly an array
+        const csvEvents = data.events || data;
+        // Ensure we return an array
+        return Array.isArray(csvEvents) ? csvEvents : [];
+      }
+    } catch (error) {
+      console.error('Error fetching events from sheets:', error);
+    }
+    return [];
+  };
+
   const fetchClubs = async () => {
     try {
       setLoading(true);
@@ -124,28 +140,53 @@ const ClubsPage = () => {
         params.append('sortDirection', sortDirection);
       }
 
-      const response = await fetch(`/api/clubs?${params}`);
+      // Fetch clubs and events in parallel
+      const [clubsResponse, csvEvents] = await Promise.all([
+        fetch(`/api/clubs?${params}`),
+        fetchEventsFromSheets()
+      ]);
       
-      if (!response.ok) {
+      if (!clubsResponse.ok) {
         throw new Error('Failed to fetch clubs');
       }
 
-      const clubsData = await response.json();
+      const clubsData = await clubsResponse.json();
       
       // Filter out duplicate clubs based on ID to prevent key conflicts
       const uniqueClubs = clubsData.filter((club: Club, index: number, self: Club[]) => 
         index === self.findIndex((c) => c.id === club.id)
       );
       
-      // Also ensure events within clubs are unique
-      const cleanedClubs = uniqueClubs.map(club => ({
-        ...club,
-        events: club.events ? club.events.filter((event, idx, arr) => 
-          idx === arr.findIndex(e => e.id === event.id)
-        ) : []
-      }));
+      // Update clubs with correct event counts from both DB and Google Sheets
+      const clubsWithUpdatedCounts = uniqueClubs.map(club => {
+        // Ensure csvEvents is an array before filtering
+        const eventsArray = Array.isArray(csvEvents) ? csvEvents : [];
+        
+        // Count events from Google Sheets for this club
+        const sheetEventsForClub = eventsArray.filter((event: any) => {
+          const eventClubName = event.clubName?.toLowerCase();
+          const clubName = club.name.toLowerCase();
+          return eventClubName === clubName;
+        });
+        
+        console.log(`Club: ${club.name}, DB events: ${club._count?.events || 0}, Sheet events: ${sheetEventsForClub.length}`);
+        
+        // Combine DB events count with sheet events count
+        const totalEventCount = (club._count?.events || 0) + sheetEventsForClub.length;
+        
+        return {
+          ...club,
+          events: club.events ? club.events.filter((event, idx, arr) => 
+            idx === arr.findIndex(e => e.id === event.id)
+          ) : [],
+          _count: {
+            ...club._count,
+            events: totalEventCount
+          }
+        };
+      });
       
-      setClubs(cleanedClubs);
+      setClubs(clubsWithUpdatedCounts);
     } catch (error) {
       console.error('Error fetching clubs:', error);
       toast({
@@ -182,7 +223,17 @@ const ClubsPage = () => {
 
   // Handle loading and authentication states
   if (status === 'loading') {
-    return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen">
+        <img
+          src="/UI/dino-loader.gif"
+          alt="Loading..."
+          className="w-32 h-32 mb-4"
+          style={{ imageRendering: 'pixelated' }}
+        />
+        <span className="text-gray-600">Loading clubs...</span>
+      </div>
+    );
   }
 
   if (!session) {
@@ -224,8 +275,14 @@ const ClubsPage = () => {
 
         {/* Loading state */}
         {loading ? (
-          <div className="flex justify-center py-12">
-            <MiniLoader size="lg" />
+          <div className="flex flex-col items-center justify-center py-12">
+            <img
+              src="/UI/dino-loader.gif"
+              alt="Loading..."
+              className="w-24 h-24 mb-4"
+              style={{ imageRendering: 'pixelated' }}
+            />
+            <span className="text-gray-600">Loading clubs...</span>
           </div>
         ) : (
           <>
@@ -322,7 +379,12 @@ const ClubsPage = () => {
                       </div>
                       <div className="flex items-center gap-1">
                         <Calendar className="h-3 w-3" />
-                        <span>{club._count.events} events</span>
+                        <Link 
+                          href={`/events?clubName=${encodeURIComponent(club.name)}`}
+                          className="hover:text-green-600 hover:underline transition-colors cursor-pointer"
+                        >
+                          <span>{club._count.events} events</span>
+                        </Link>
                       </div>
                       {viewMode === 'list' && (
                         <>
@@ -345,9 +407,20 @@ const ClubsPage = () => {
                           View Details
                         </Link>
                       </Button>
-                      <Button variant="outline" size="sm" className={viewMode === 'grid' ? 'flex-1' : ''} asChild>
-                        <Link href={`/events?clubId=${club.id}`}>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className={`${viewMode === 'grid' ? 'flex-1' : ''} hover:bg-green-50 hover:border-green-200 hover:text-green-700 transition-colors`} 
+                        asChild
+                      >
+                        <Link href={`/events?clubName=${encodeURIComponent(club.name)}`} className="flex items-center gap-1.5">
+                          <Calendar className="h-3 w-3" />
                           Events
+                          {club._count.events > 0 && (
+                            <Badge variant="secondary" className="text-xs px-1.5 py-0.5 ml-1">
+                              {club._count.events}
+                            </Badge>
+                          )}
                         </Link>
                       </Button>
                       {/* Show manage button for owners in list mode */}

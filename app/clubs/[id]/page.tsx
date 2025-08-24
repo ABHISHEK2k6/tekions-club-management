@@ -90,11 +90,15 @@ export default function ClubDetailPage() {
   const [hasRequestedMembership, setHasRequestedMembership] = useState(false);
   const [checkingRequestStatus, setCheckingRequestStatus] = useState(false);
   const [feedbackDialogOpen, setFeedbackDialogOpen] = useState(false);
+  const [sheetAnnouncements, setSheetAnnouncements] = useState<any[]>([]);
+  const [sheetEvents, setSheetEvents] = useState<any[]>([]);
+  const [loadingSheetData, setLoadingSheetData] = useState(true);
 
   const currentUserId = session?.user?.id;
 
   useEffect(() => {
     fetchClub();
+    fetchSheetData();
   }, [params.id]);
 
   useEffect(() => {
@@ -103,6 +107,32 @@ export default function ClubDetailPage() {
       checkUserRequestStatus();
     }
   }, [params.id, session?.user?.id]);
+
+  const fetchSheetData = async () => {
+    try {
+      setLoadingSheetData(true);
+      
+      // Fetch announcements and events from CSV endpoints
+      const [announcementsResponse, eventsResponse] = await Promise.all([
+        fetch('/api/announcements/csv'),
+        fetch('/api/events/csv')
+      ]);
+
+      if (announcementsResponse.ok) {
+        const announcementsData = await announcementsResponse.json();
+        setSheetAnnouncements(announcementsData.announcements || []);
+      }
+
+      if (eventsResponse.ok) {
+        const eventsData = await eventsResponse.json();
+        setSheetEvents(eventsData.events || []);
+      }
+    } catch (error) {
+      console.error('Error fetching sheet data:', error);
+    } finally {
+      setLoadingSheetData(false);
+    }
+  };
 
   const fetchClub = async () => {
     if (!params.id) return;
@@ -198,9 +228,26 @@ export default function ClubDetailPage() {
 
   const getUserRole = () => {
     if (!club || !currentUserId) return 'non-member';
-    if (club.owner.id === currentUserId) return 'owner';
-    if (club.members.some(member => member.user.id === currentUserId)) return 'member';
-    return 'non-member';
+    const member = club.members.find(member => member.user.id === currentUserId);
+    return member ? member.role : 'non-member';
+  };
+
+  const getFilteredSheetAnnouncements = () => {
+    if (!club || !sheetAnnouncements.length) return [];
+    
+    // Filter announcements by club name (case-insensitive)
+    return sheetAnnouncements.filter(announcement => 
+      announcement.club?.toLowerCase() === club.name.toLowerCase()
+    );
+  };
+
+  const getFilteredSheetEvents = () => {
+    if (!club || !sheetEvents.length) return [];
+    
+    // Filter events by club name (case-insensitive)
+    return sheetEvents.filter(event => 
+      event.clubName?.toLowerCase() === club.name.toLowerCase()
+    );
   };
 
   // Debug logging
@@ -324,8 +371,14 @@ export default function ClubDetailPage() {
     return (
       <div className="min-h-screen bg-gray-50">
         <PortalNavbar />
-        <div className="flex items-center justify-center py-12">
-          <MiniLoader size="lg" />
+        <div className="flex flex-col items-center justify-center py-12">
+          <img
+            src="/UI/dino-loader.gif"
+            alt="Loading..."
+            className="w-28 h-28 mb-4"
+            style={{ imageRendering: 'pixelated' }}
+          />
+          <span className="text-gray-600">Loading club details...</span>
         </div>
       </div>
     );
@@ -815,31 +868,169 @@ export default function ClubDetailPage() {
                 <CardTitle>Recent Announcements</CardTitle>
               </CardHeader>
               <CardContent>
-                {club.announcements.length > 0 ? (
-                  <div className="space-y-4">
-                    {club.announcements.slice(0, 3).map((announcement) => (
-                      <div key={announcement.id} className="p-4 border rounded-lg">
-                        <div className="flex items-start space-x-3">
-                          <Avatar className="w-8 h-8">
-                            <AvatarImage src={announcement.author.image} />
-                            <AvatarFallback>{announcement.author.name.charAt(0)}</AvatarFallback>
-                          </Avatar>
-                          <div className="flex-1">
-                            <div className="flex items-center space-x-2">
-                              <h4 className="font-medium text-sm">{announcement.title}</h4>
-                              <span className="text-xs text-gray-500">
-                                {new Date(announcement.createdAt).toLocaleDateString()}
-                              </span>
-                            </div>
-                            <p className="text-sm text-gray-600 mt-1 line-clamp-2">{announcement.content}</p>
-                            <p className="text-xs text-gray-500 mt-2">By {announcement.author.name}</p>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
+                {loadingSheetData ? (
+                  <div className="flex justify-center py-4">
+                    <MiniLoader />
                   </div>
                 ) : (
-                  <p className="text-gray-500">No announcements yet</p>
+                  <>
+                    {getFilteredSheetAnnouncements().length > 0 ? (
+                      <div className="space-y-2">
+                        {getFilteredSheetAnnouncements().slice(0, 5).map((announcement) => (
+                          <Link 
+                            key={announcement.id} 
+                            href={`/announcements?highlight=${announcement.id}`}
+                            className="block p-3 border rounded-lg hover:bg-gray-50 hover:border-blue-200 transition-colors cursor-pointer"
+                          >
+                            <div className="flex items-center justify-between">
+                              <h4 className="font-medium text-sm text-blue-600 hover:text-blue-800 truncate flex-1 mr-2">
+                                {announcement.title}
+                              </h4>
+                              <div className="flex items-center gap-2 flex-shrink-0">
+                                {announcement.priority && announcement.priority !== 'normal' && (
+                                  <Badge variant={announcement.priority === 'urgent' ? 'destructive' : 'secondary'} className="text-xs">
+                                    {announcement.priority}
+                                  </Badge>
+                                )}
+                                <span className="text-xs text-gray-500">
+                                  {new Date(announcement.createdAt).toLocaleDateString()}
+                                </span>
+                              </div>
+                            </div>
+                          </Link>
+                        ))}
+                        {getFilteredSheetAnnouncements().length > 5 && (
+                          <div className="pt-2 border-t">
+                            <Link 
+                              href="/announcements" 
+                              className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                            >
+                              View all {getFilteredSheetAnnouncements().length} announcements →
+                            </Link>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <p className="text-gray-500">No announcements yet</p>
+                    )}
+                    
+                    {/* Show database announcements if any */}
+                    {club?.announcements && club.announcements.length > 0 && (
+                      <>
+                        <div className="border-t my-4 pt-4">
+                          <p className="text-xs text-gray-400 mb-3">Database Announcements</p>
+                          <div className="space-y-2">
+                            {club.announcements.slice(0, 3).map((announcement) => (
+                              <Link 
+                                key={announcement.id} 
+                                href={`/announcements?highlight=${announcement.id}`}
+                                className="block p-3 border rounded-lg bg-gray-50 hover:bg-gray-100 hover:border-blue-200 transition-colors cursor-pointer"
+                              >
+                                <div className="flex items-center justify-between">
+                                  <h4 className="font-medium text-sm text-blue-600 hover:text-blue-800 truncate flex-1 mr-2">
+                                    {announcement.title}
+                                  </h4>
+                                  <span className="text-xs text-gray-500">
+                                    {new Date(announcement.createdAt).toLocaleDateString()}
+                                  </span>
+                                </div>
+                              </Link>
+                            ))}
+                          </div>
+                        </div>
+                      </>
+                    )}
+                  </>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Recent Events</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {loadingSheetData ? (
+                  <div className="flex justify-center py-4">
+                    <MiniLoader />
+                  </div>
+                ) : (
+                  <>
+                    {getFilteredSheetEvents().length > 0 ? (
+                      <div className="space-y-2">
+                        {getFilteredSheetEvents().slice(0, 5).map((event) => (
+                          <Link 
+                            key={event.id} 
+                            href={`/events/${event.id}`}
+                            className="block p-3 border rounded-lg hover:bg-gray-50 hover:border-green-200 transition-colors cursor-pointer"
+                          >
+                            <div className="flex items-center justify-between">
+                              <h4 className="font-medium text-sm text-green-600 hover:text-green-800 truncate flex-1 mr-2">
+                                {event.title}
+                              </h4>
+                              <div className="flex items-center gap-2 flex-shrink-0">
+                                {event.category && (
+                                  <Badge variant="outline" className="text-xs">
+                                    {event.category}
+                                  </Badge>
+                                )}
+                                <span className="text-xs text-gray-500">
+                                  {new Date(event.date).toLocaleDateString()}
+                                </span>
+                              </div>
+                            </div>
+                            <p className="text-xs text-gray-500 mt-1 truncate">
+                              <MapPin className="h-3 w-3 inline mr-1" />
+                              {event.location}
+                            </p>
+                          </Link>
+                        ))}
+                        {getFilteredSheetEvents().length > 5 && (
+                          <div className="pt-2 border-t">
+                            <Link 
+                              href="/events" 
+                              className="text-sm text-green-600 hover:text-green-800 font-medium"
+                            >
+                              View all {getFilteredSheetEvents().length} events →
+                            </Link>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <p className="text-gray-500">No events yet</p>
+                    )}
+                    
+                    {/* Show database events if any */}
+                    {club?.events && club.events.length > 0 && (
+                      <>
+                        <div className="border-t my-4 pt-4">
+                          <p className="text-xs text-gray-400 mb-3">Database Events</p>
+                          <div className="space-y-2">
+                            {club.events.slice(0, 3).map((event) => (
+                              <Link 
+                                key={event.id} 
+                                href={`/events/${event.id}`}
+                                className="block p-3 border rounded-lg bg-gray-50 hover:bg-gray-100 hover:border-green-200 transition-colors cursor-pointer"
+                              >
+                                <div className="flex items-center justify-between">
+                                  <h4 className="font-medium text-sm text-green-600 hover:text-green-800 truncate flex-1 mr-2">
+                                    {event.title}
+                                  </h4>
+                                  <span className="text-xs text-gray-500">
+                                    {new Date(event.date).toLocaleDateString()}
+                                  </span>
+                                </div>
+                                <p className="text-xs text-gray-500 mt-1 truncate">
+                                  <MapPin className="h-3 w-3 inline mr-1" />
+                                  {event.venue}
+                                </p>
+                              </Link>
+                            ))}
+                          </div>
+                        </div>
+                      </>
+                    )}
+                  </>
                 )}
               </CardContent>
             </Card>
