@@ -6,9 +6,8 @@ import { redirect } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import PortalNavbar from '@/components/portal-navbar';
+import SelectionPanel from '@/components/ui/selection-panel';
 import { useToast } from '@/hooks/use-toast';
 import { 
   Users, 
@@ -23,6 +22,7 @@ import {
   Loader2
 } from 'lucide-react';
 import Link from 'next/link';
+import AiClubFinder from '@/components/AiClubFinder';
 
 interface Club {
   id: string;
@@ -58,10 +58,32 @@ const ClubsPage = () => {
   const { data: session, status } = useSession();
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [sortBy, setSortBy] = useState('name');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [clubs, setClubs] = useState<Club[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentUserId, setCurrentUserId] = useState<string>('');
+
+  // Filter and sort options for the selection panel
+  const filterOptions = [
+    { id: 'technology', label: 'Technology', value: 'technology', color: '#3b82f6' },
+    { id: 'sports', label: 'Sports', value: 'sports', color: '#10b981' },
+    { id: 'arts', label: 'Arts', value: 'arts', color: '#8b5cf6' },
+    { id: 'music', label: 'Music', value: 'music', color: '#f59e0b' },
+    { id: 'academic', label: 'Academic', value: 'academic', color: '#ef4444' },
+    { id: 'cultural', label: 'Cultural', value: 'cultural', color: '#06b6d4' },
+    { id: 'social service', label: 'Social Service', value: 'social service', color: '#84cc16' },
+    { id: 'business', label: 'Business', value: 'business', color: '#f97316' },
+  ];
+
+  const sortOptions = [
+    { id: 'name', label: 'Name', value: 'name' },
+    { id: 'members', label: 'Member Count', value: 'members' },
+    { id: 'created', label: 'Date Created', value: 'created' },
+    { id: 'events', label: 'Event Count', value: 'events' },
+  ];
 
   useEffect(() => {
     fetchClubs();
@@ -69,7 +91,7 @@ const ClubsPage = () => {
     if (session?.user?.email) {
       fetchCurrentUserId();
     }
-  }, [session, searchTerm, selectedCategory]);
+  }, [session, searchTerm, selectedCategories, sortBy, sortDirection]);
 
   const fetchCurrentUserId = async () => {
     try {
@@ -88,12 +110,17 @@ const ClubsPage = () => {
       setLoading(true);
       const params = new URLSearchParams();
       
-      if (selectedCategory !== 'all') {
-        params.append('category', selectedCategory);
+      if (selectedCategories.length > 0) {
+        params.append('categories', selectedCategories.join(','));
       }
       
       if (searchTerm) {
         params.append('search', searchTerm);
+      }
+
+      if (sortBy) {
+        params.append('sortBy', sortBy);
+        params.append('sortDirection', sortDirection);
       }
 
       const response = await fetch(`/api/clubs?${params}`);
@@ -103,7 +130,21 @@ const ClubsPage = () => {
       }
 
       const clubsData = await response.json();
-      setClubs(clubsData);
+      
+      // Filter out duplicate clubs based on ID to prevent key conflicts
+      const uniqueClubs = clubsData.filter((club: Club, index: number, self: Club[]) => 
+        index === self.findIndex((c) => c.id === club.id)
+      );
+      
+      // Also ensure events within clubs are unique
+      const cleanedClubs = uniqueClubs.map(club => ({
+        ...club,
+        events: club.events ? club.events.filter((event, idx, arr) => 
+          idx === arr.findIndex(e => e.id === event.id)
+        ) : []
+      }));
+      
+      setClubs(cleanedClubs);
     } catch (error) {
       console.error('Error fetching clubs:', error);
       toast({
@@ -160,40 +201,29 @@ const ClubsPage = () => {
           </p>
         </div>
 
-        {/* Filters */}
-        <div className="flex flex-col sm:flex-row gap-4 mb-8">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-            <Input
-              placeholder="Search clubs by name, description, or tags..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-          <div className="w-full sm:w-48">
-            <select
-              value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-              className="w-full px-3 py-2 border border-border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary bg-background text-foreground"
-            >
-              {categories.map((category) => (
-                <option key={category} value={category}>
-                  {category === 'all' ? 'All Categories' : category}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
+        {/* AI Club Finder */}
+        <AiClubFinder />
 
-        {/* Create Club Button */}
-        <div className="mb-6 flex justify-end">
-          <Button asChild>
-            <Link href="/clubs/create">
-              <Plus className="h-4 w-4 mr-2" />
-              Create Club
-            </Link>
-          </Button>
+        {/* Selection Panel */}
+        <div className="mb-6">
+          <SelectionPanel
+            title="Browse Clubs"
+            searchPlaceholder="Search clubs by name, description, or tags..."
+            searchValue={searchTerm}
+            onSearchChange={setSearchTerm}
+            filterOptions={filterOptions}
+            selectedFilters={selectedCategories}
+            onFilterChange={setSelectedCategories}
+            sortOptions={sortOptions}
+            selectedSort={sortBy}
+            onSortChange={setSortBy}
+            sortDirection={sortDirection}
+            onSortDirectionChange={setSortDirection}
+            viewMode={viewMode}
+            onViewModeChange={setViewMode}
+            totalResults={clubs.length}
+            showingResults={clubs.length}
+          />
         </div>
 
         {/* Loading state */}
@@ -210,13 +240,21 @@ const ClubsPage = () => {
               </p>
             </div>
 
-            {/* Clubs Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {clubs.map((club) => (
-                <Card key={club.id} className="hover:shadow-lg transition-shadow">
-                  <CardHeader>
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-center space-x-3">
+            {/* Clubs Grid/List */}
+            <div className={viewMode === 'grid' 
+              ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" 
+              : "space-y-4"
+            }>
+              {clubs.map((club, index) => (
+                <Card 
+                  key={`club-${club.id}-${index}`} 
+                  className={`hover:shadow-lg transition-shadow ${
+                    viewMode === 'list' ? 'flex flex-row' : ''
+                  }`}
+                >
+                  <CardHeader className={viewMode === 'list' ? 'flex-shrink-0 w-1/3' : ''}>
+                    <div className={`flex items-start ${viewMode === 'list' ? 'flex-col space-y-2' : 'justify-between'}`}>
+                      <div className={`flex items-center space-x-3 ${viewMode === 'list' ? 'flex-col space-x-0 space-y-2 text-center' : ''}`}>
                         <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center overflow-hidden">
                           {club.logo ? (
                             <img 
@@ -229,8 +267,10 @@ const ClubsPage = () => {
                           )}
                         </div>
                         <div>
-                          <CardTitle className="text-lg">{club.name}</CardTitle>
-                          <div className="flex gap-2 mt-1">
+                          <CardTitle className={`text-lg ${viewMode === 'list' ? 'text-center text-sm' : ''}`}>
+                            {club.name}
+                          </CardTitle>
+                          <div className={`flex gap-2 mt-1 ${viewMode === 'list' ? 'justify-center flex-wrap' : ''}`}>
                             <Badge variant="secondary" className="text-xs">
                               {club.category}
                             </Badge>
@@ -247,26 +287,31 @@ const ClubsPage = () => {
                           </div>
                         </div>
                       </div>
-                      {/* Show different buttons for owner vs regular users */}
-                      {isClubOwner(club) && (
+                      {/* Show manage button for owners in grid mode */}
+                      {isClubOwner(club) && viewMode === 'grid' && (
                         <Button
                           variant="default"
                           size="sm"
                           className="ml-2"
+                          asChild
                         >
-                          <Settings className="h-3 w-3 mr-1" />
-                          Manage
+                          <Link href={`/clubs/${club.id}/manage`}>
+                            <Settings className="h-3 w-3 mr-1" />
+                            Manage
+                          </Link>
                         </Button>
                       )}
                     </div>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className={viewMode === 'list' ? 'flex-1' : ''}>
                     <CardDescription className="mb-4">
                       {club.description}
                     </CardDescription>
 
                     {/* Stats */}
-                    <div className="grid grid-cols-2 gap-4 mb-4 text-sm text-muted-foreground">
+                    <div className={`grid gap-4 mb-4 text-sm text-muted-foreground ${
+                      viewMode === 'list' ? 'grid-cols-4' : 'grid-cols-2'
+                    }`}>
                       <div className="flex items-center gap-1">
                         <Users className="h-3 w-3" />
                         <span>{club._count.members} members</span>
@@ -275,20 +320,41 @@ const ClubsPage = () => {
                         <Calendar className="h-3 w-3" />
                         <span>{club._count.events} events</span>
                       </div>
+                      {viewMode === 'list' && (
+                        <>
+                          <div className="flex items-center gap-1">
+                            <MapPin className="h-3 w-3" />
+                            <span>Online</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <UserPlus className="h-3 w-3" />
+                            <span>Open</span>
+                          </div>
+                        </>
+                      )}
                     </div>
 
                     {/* Actions */}
-                    <div className="flex gap-2">
-                      <Button variant="outline" size="sm" className="flex-1" asChild>
+                    <div className={`flex gap-2 ${viewMode === 'list' ? 'justify-end' : ''}`}>
+                      <Button variant="outline" size="sm" className={viewMode === 'grid' ? 'flex-1' : ''} asChild>
                         <Link href={`/clubs/${club.id}`}>
                           View Details
                         </Link>
                       </Button>
-                      <Button variant="outline" size="sm" className="flex-1" asChild>
-                        <Link href={`/clubs/${club.id}/events`}>
+                      <Button variant="outline" size="sm" className={viewMode === 'grid' ? 'flex-1' : ''} asChild>
+                        <Link href={`/events?clubId=${club.id}`}>
                           Events
                         </Link>
                       </Button>
+                      {/* Show manage button for owners in list mode */}
+                      {isClubOwner(club) && viewMode === 'list' && (
+                        <Button variant="default" size="sm" asChild>
+                          <Link href={`/clubs/${club.id}/manage`}>
+                            <Settings className="h-3 w-3 mr-1" />
+                            Manage
+                          </Link>
+                        </Button>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -308,23 +374,6 @@ const ClubsPage = () => {
                 </Button>
               </div>
             )}
-
-            {/* Call to action */}
-            <div className="mt-12 text-center">
-              <Card className="bg-muted border-border">
-                <CardContent className="py-8">
-                  <h3 className="text-xl font-semibold text-foreground mb-2">
-                    Don't see a club you're interested in?
-                  </h3>
-                  <p className="text-muted-foreground mb-4">
-                    Start your own club and bring together students who share your passion.
-                  </p>
-                  <Button asChild>
-                    <Link href="/clubs/create">Create a New Club</Link>
-                  </Button>
-                </CardContent>
-              </Card>
-            </div>
           </>
         )}
       </div>

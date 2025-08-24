@@ -666,8 +666,8 @@ const ProfilePage = () => {
                       </div>
                     ) : (
                       <div className="space-y-3">
-                        {userProfile.eventRegistrations.map((registration) => (
-                          <div key={registration.event.id} className="flex items-center justify-between p-4 border rounded-lg">
+                        {userProfile.eventRegistrations.map((registration, index) => (
+                          <div key={`profile-${registration.event.id}-${index}`} className="flex items-center justify-between p-4 border rounded-lg">
                             <div>
                               <h4 className="font-medium text-gray-900">{registration.event.title}</h4>
                               <p className="text-sm text-gray-500">

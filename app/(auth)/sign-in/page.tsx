@@ -53,7 +53,14 @@ const SignInContent = () => {
           transition={{ duration: 0.5 }}
           className="mb-8 text-center"
         >
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2" style={{ fontFamily: 'monospace' }}>
+          <h1 
+            className="text-2xl font-bold mb-2" 
+            style={{ 
+              fontFamily: "'Press Start 2P', monospace",
+              color: '#000000',
+              letterSpacing: '0.15em'
+            }}
+          >
             SIGN IN
           </h1>
         </motion.div>

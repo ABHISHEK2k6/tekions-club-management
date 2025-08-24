@@ -20,7 +20,8 @@ import {
   Bell,
   Star,
   ArrowRight,
-  Plus
+  Plus,
+  Sparkles
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -176,12 +177,16 @@ const DashboardPage = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Welcome Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground">
-            Welcome back, {session?.user?.name?.split(' ')[0] || 'Student'}!
-          </h1>
-          <p className="text-muted-foreground mt-2">
-            Here's what's happening in your clubs today.
-          </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-foreground">
+                Welcome back, {session?.user?.name?.split(' ')[0] || 'Student'}!
+              </h1>
+              <p className="text-muted-foreground mt-2">
+                Here's what's happening in your clubs today.
+              </p>
+            </div>
+          </div>
         </div>
 
         {/* Stats Grid */}
@@ -281,8 +286,8 @@ const DashboardPage = () => {
                   });
                   
                   return upcomingEvents.length > 0 ? (
-                    upcomingEvents.slice(0, 3).map((event) => (
-                      <div key={event.id} className="flex items-start justify-between p-4 rounded-lg border border-border hover:bg-muted/50 transition-colors">
+                    upcomingEvents.slice(0, 3).map((event, index) => (
+                      <div key={`dashboard-${event.id}-${index}`} className="flex items-start justify-between p-4 rounded-lg border border-border hover:bg-muted/50 transition-colors">
                         <div className="flex-1">
                           <h4 className="font-semibold text-sm text-foreground mb-1">{event.title}</h4>
                           <p className="text-xs text-muted-foreground mb-2">{event.clubName}</p>

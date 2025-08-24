@@ -12,16 +12,16 @@ export default function SignOutPage() {
   const { data: session, status } = useSession();
 
   useEffect(() => {
-    // If user is not signed in, redirect to sign-in page
+    // If user is not signed in, redirect to home page
     if (status === "unauthenticated") {
-      window.location.href = "/sign-in";
+      window.location.href = "/";
     }
   }, [status]);
 
   const handleSignOut = async () => {
     await signOut({
       redirect: true,
-      callbackUrl: `${window.location.origin}/sign-in`
+      callbackUrl: `${window.location.origin}/`
     });
   };
 

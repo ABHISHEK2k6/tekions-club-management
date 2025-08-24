@@ -80,7 +80,7 @@ export default function AuthHeader() {
               className="text-red-600 focus:text-red-600"
               onClick={() => signOut({
                 redirect: true,
-                callbackUrl: `${window.location.origin}/sign-in`
+                callbackUrl: `${window.location.origin}/`
               })}
             >
               <LogOut className="mr-2 h-4 w-4" />

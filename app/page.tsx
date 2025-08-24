@@ -5,6 +5,52 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from "@/components/ui/button";
 import Image from 'next/image';
+import { motion } from 'framer-motion';
+
+// Flying bird component with animation
+const FlyingBird = ({ 
+  delay = 0, 
+  initialX, 
+  initialY, 
+  width = '2.5vw', 
+  height = '2.5vw' 
+}: { 
+  delay?: number; 
+  initialX: string; 
+  initialY: string; 
+  width?: string; 
+  height?: string; 
+}) => (
+  <motion.div
+    className="absolute"
+    style={{
+      left: initialX,
+      top: initialY,
+      width,
+      height
+    }}
+    initial={{ x: 0, y: 0, opacity: 0.7 }}
+    animate={{ 
+      x: [0, 20, -15, 30, -10, 25, 0],
+      y: [0, -10, 5, -15, 8, -5, 0],
+      opacity: [0.7, 0.9, 0.6, 0.8, 0.7, 0.9, 0.7]
+    }}
+    transition={{
+      duration: 8,
+      delay,
+      repeat: Infinity,
+      ease: "easeInOut"
+    }}
+  >
+    <Image 
+      src="/UI/bird.png" 
+      alt="Flying bird" 
+      width={30} 
+      height={30} 
+      className="object-contain w-full h-full"
+    />
+  </motion.div>
+);
 
 export default function Home() {
   const { data: session, status } = useSession();
@@ -166,120 +212,24 @@ export default function Home() {
         </div>
       </Link>
 
-      {/* Birds positioned as in reference */}
+      {/* Birds positioned as in reference - now with flying animation */}
       {/* Top right bird - highest position */}
-      <div 
-        className="absolute"
-        style={{
-          right: '70rem',
-          top: '5vh',
-          width: '2.5vw',
-          height: '2.5vw'
-        }}
-      >
-        <Image 
-          src="/UI/bird.png" 
-          alt="Flying bird" 
-          width={30} 
-          height={30} 
-          className="object-contain opacity-70 w-full h-full"
-        />
-      </div>
+      <FlyingBird delay={0} initialX="calc(100vw - 70rem)" initialY="5vh" />
 
       {/* Second bird - middle top */}
-      <div 
-        className="absolute"
-        style={{
-          right: '40rem',
-          top: '10rem',
-          width: '2.5vw',
-          height: '2.5vw'
-        }}
-      >
-        <Image 
-          src="/UI/bird.png" 
-          alt="Flying bird" 
-          width={30} 
-          height={30} 
-          className="object-contain opacity-70 w-full h-full"
-        />
-      </div>
+      <FlyingBird delay={2} initialX="calc(100vw - 40rem)" initialY="10rem" />
 
       {/* Third bird - lower in the top formation */}
-      <div 
-        className="absolute"
-        style={{
-          right: '50rem',
-          top: '16vh',
-          width: '2.5vw',
-          height: '2.5vw'
-        }}
-      >
-        <Image 
-          src="/UI/bird.png" 
-          alt="Flying bird" 
-          width={30} 
-          height={30} 
-          className="object-contain opacity-70 w-full h-full"
-        />
-      </div>
+      <FlyingBird delay={4} initialX="calc(100vw - 50rem)" initialY="16vh" />
 
       {/* Center-left bird - near the title */}
-      <div 
-        className="absolute"
-        style={{
-          left: '10rem',
-          top: '40vh',
-          width: '2.5vw',
-          height: '2.5vw'
-        }}
-      >
-        <Image 
-          src="/UI/bird.png" 
-          alt="Flying bird" 
-          width={30} 
-          height={30} 
-          className="object-contain opacity-70 w-full h-full"
-        />
-      </div>
+      <FlyingBird delay={1} initialX="10rem" initialY="40vh" />
 
       {/* Bottom left bird */}
-      <div 
-        className="absolute"
-        style={{
-          left: '6vw',
-          bottom: '35vh',
-          width: '2.5vw',
-          height: '2.5vw'
-        }}
-      >
-        <Image 
-          src="/UI/bird.png" 
-          alt="Flying bird" 
-          width={30} 
-          height={30} 
-          className="object-contain opacity-70 w-full h-full"
-        />
-      </div>
+      <FlyingBird delay={3} initialX="6vw" initialY="calc(100vh - 35vh)" />
 
       {/* Bottom right bird */}
-      <div 
-        className="absolute"
-        style={{
-          right: '70rem',
-          bottom: '40vh',
-          width: '2.5vw',
-          height: '2.5vw'
-        }}
-      >
-        <Image 
-          src="/UI/bird.png" 
-          alt="Flying bird" 
-          width={30} 
-          height={30} 
-          className="object-contain opacity-70 w-full h-full"
-        />
-      </div>
+      <FlyingBird delay={5} initialX="calc(100vw - 70rem)" initialY="calc(100vh - 40vh)" />
 
       {/* Tekions label */}
       <div 

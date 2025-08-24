@@ -182,13 +182,13 @@ const EventsPage = () => {
           </div>
         ) : filteredEvents.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredEvents.map((event) => {
+            {filteredEvents.map((event, index) => {
               const eventDate = new Date(event.date);
               const now = new Date();
               const isUpcoming = eventDate > now;
               
               return (
-                <Card key={event.id} className="hover:shadow-lg transition-shadow group">
+                <Card key={`events-page-${event.id}-${index}`} className="hover:shadow-lg transition-shadow group">
                   <CardHeader className="pb-3">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">

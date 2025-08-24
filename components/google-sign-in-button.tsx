@@ -24,7 +24,12 @@ const GoogleSignInButton: FC<GoogleSignInButtonProps> = ({ children }) => {
   };
 
   return (
-    <Button disabled={isLoading} onClick={loginWithGoogle} className='w-full'>
+    <Button 
+      disabled={isLoading} 
+      onClick={loginWithGoogle} 
+      className='w-full bg-transparent hover:bg-transparent border-0 p-0 shadow-none'
+      variant="ghost"
+    >
       {isLoading && (
         <svg
           xmlns='http://www.w3.org/2000/svg'

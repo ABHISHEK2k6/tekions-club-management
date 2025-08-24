@@ -26,8 +26,27 @@ const SignUpPage = () => {
           transition={{ duration: 0.5 }}
           className="mb-6 text-center"
         >
-          <h1 className="text-2xl font-bold">Create Your Account</h1>
-          <p className="text-muted-foreground mt-2">Join Tekions today</p>
+          <h1 
+            className="text-2xl font-bold mb-2" 
+            style={{ 
+              fontFamily: "'Press Start 2P', monospace",
+              color: '#000000',
+              letterSpacing: '0.15em'
+            }}
+          >
+            SIGN UP
+          </h1>
+          <p 
+            className="mt-2" 
+            style={{ 
+              fontFamily: "'Press Start 2P', monospace",
+              color: '#5A5B55',
+              fontSize: '12px',
+              letterSpacing: '0.1em'
+            }}
+          >
+            Join Tekions today
+          </p>
         </motion.div>
         <SignUpForm />
       </div>

@@ -18,8 +18,17 @@ import {
   UserPlus,
   Share,
   Star,
-  Loader2
+  Loader2,
+  Mail,
+  Phone,
+  MapPin,
+  GraduationCap,
+  MessageSquare,
+  Wand2
 } from 'lucide-react';
+import AnonymousComplaintBox from '@/components/AnonymousComplaintBox';
+import AiSuggestions from '@/components/AiSuggestions';
+import { Dialog, DialogTrigger } from '@/components/ui/dialog';
 
 interface Club {
   id: string;
@@ -80,12 +89,16 @@ export default function ClubDetailPage() {
   const [requestsLoading, setRequestsLoading] = useState(false);
   const [hasRequestedMembership, setHasRequestedMembership] = useState(false);
   const [checkingRequestStatus, setCheckingRequestStatus] = useState(false);
+  const [feedbackDialogOpen, setFeedbackDialogOpen] = useState(false);
 
   const currentUserId = session?.user?.id;
 
   useEffect(() => {
     fetchClub();
-    if (session?.user?.id) {
+  }, [params.id]);
+
+  useEffect(() => {
+    if (session?.user?.id && params.id && !checkingRequestStatus) {
       fetchMembershipRequests();
       checkUserRequestStatus();
     }
@@ -146,11 +159,24 @@ export default function ClubDetailPage() {
 
     try {
       setCheckingRequestStatus(true);
+      
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Checking request status for user:', currentUserId, 'club:', params.id);
+      }
+      
       const response = await fetch(`/api/clubs/${params.id}/requests?userId=${currentUserId}`);
       
       if (response.ok) {
         const data = await response.json();
+        
+        if (process.env.NODE_ENV === 'development') {
+          console.log('Request status response:', data);
+        }
+        
         setHasRequestedMembership(data.hasActiveRequest || false);
+      } else {
+        console.error('Failed to check request status:', response.status);
+        setHasRequestedMembership(false);
       }
     } catch (error) {
       console.error('Error checking request status:', error);
@@ -176,6 +202,16 @@ export default function ClubDetailPage() {
     if (club.members.some(member => member.user.id === currentUserId)) return 'member';
     return 'non-member';
   };
+
+  // Debug logging
+  if (process.env.NODE_ENV === 'development') {
+    console.log('Club page state:', { 
+      hasRequestedMembership, 
+      userRole: getUserRole(), 
+      currentUserId,
+      checkingRequestStatus 
+    });
+  }
 
   const canViewManagement = () => getUserRole() === 'owner';
   const canViewMemberContent = () => ['owner', 'member'].includes(getUserRole());
@@ -215,16 +251,30 @@ export default function ClubDetailPage() {
           throw new Error(data.error || 'Failed to send membership request');
         }
 
-        setHasRequestedMembership(true);
+        // Show success message first
         toast({
           title: 'Request Sent Successfully! 🎉',
           description: 'Your membership request has been sent to the club owner. You will be notified once it\'s reviewed.',
           duration: 5000,
         });
+
+        // Update state immediately to show "Requested" button
+        setHasRequestedMembership(true);
+        
+        // Refresh club data and check request status after a small delay
+        await fetchClub();
+        
+        // Add a small delay to ensure database consistency
+        setTimeout(async () => {
+          await checkUserRequestStatus();
+        }, 500);
       }
 
-      await fetchClub();
-      await checkUserRequestStatus();
+      // Don't call fetchClub and checkUserRequestStatus here since we already called them above for the membership request case
+      if (isUserMember()) {
+        await fetchClub();
+        await checkUserRequestStatus();
+      }
     } catch (error) {
       console.error('Error updating membership:', error);
       toast({
@@ -342,18 +392,6 @@ export default function ClubDetailPage() {
               </div>
 
               <div className="flex space-x-3">
-                {getUserRole() === 'owner' && (
-                  <>
-                    <Button variant="default">
-                      <Settings className="h-4 w-4 mr-2" />
-                      Manage Club
-                    </Button>
-                    <Button variant="outline">
-                      <UserPlus className="h-4 w-4 mr-2" />
-                      Manage Members
-                    </Button>
-                  </>
-                )}
                 
                 {getUserRole() === 'member' && (
                   <>
@@ -391,7 +429,7 @@ export default function ClubDetailPage() {
                         ) : (
                           <>
                             <UserPlus className="h-4 w-4 mr-2" />
-                            Requested
+                            Request Pending
                           </>
                         )}
                       </Button>
@@ -421,10 +459,6 @@ export default function ClubDetailPage() {
                     )}
                   </>
                 )}
-                
-                <Button variant="outline" size="sm">
-                  <Share className="h-4 w-4" />
-                </Button>
               </div>
             </div>
           </div>
@@ -450,15 +484,25 @@ export default function ClubDetailPage() {
                   </CardHeader>
                   <CardContent>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <Button 
+                        variant="outline" 
+                        className="justify-start"
+                        asChild
+                      >
+                        <Link href={`/clubs/${params.id}/manage`}>
+                          <Settings className="h-4 w-4 mr-2" />
+                          Manage Club
+                        </Link>
+                      </Button>
                       <Button variant="outline" className="justify-start">
                         <UserPlus className="h-4 w-4 mr-2" />
                         Add Members
                       </Button>
-                      <Button variant="outline" className="justify-start">
-                        <Settings className="h-4 w-4 mr-2" />
-                        Club Settings
-                      </Button>
-                      <Button variant="outline" className="justify-start">
+                      <Button 
+                        variant="outline" 
+                        className="justify-start w-full"
+                        onClick={() => window.open('https://docs.google.com/spreadsheets/d/1zQtvcA-BbpM0WIwwXOyMhJ_oi2bTGMYuCphihG5eMhI/edit', '_blank')}
+                      >
                         <Calendar className="h-4 w-4 mr-2" />
                         Create Event
                       </Button>
@@ -619,8 +663,8 @@ export default function ClubDetailPage() {
               <CardContent>
                 {club.events && club.events.length > 0 ? (
                   <div className="space-y-4">
-                    {club.events.slice(0, getUserRole() === 'non-member' ? 3 : undefined).map((event) => (
-                      <div key={event.id} className="flex items-center justify-between p-4 border rounded-lg">
+                    {club.events.slice(0, getUserRole() === 'non-member' ? 3 : undefined).map((event, index) => (
+                      <div key={`club-detail-${event.id}-${index}`} className="flex items-center justify-between p-4 border rounded-lg">
                         <div>
                           <h4 className="font-medium">{event.title}</h4>
                           <p className="text-sm text-gray-600">
@@ -646,7 +690,10 @@ export default function ClubDetailPage() {
 
             <Card>
               <CardHeader>
-                <CardTitle>Members ({club._count.members})</CardTitle>
+                <CardTitle className="flex items-center">
+                  <Users className="h-5 w-5 mr-2" />
+                  Members ({club._count.members})
+                </CardTitle>
                 <CardDescription>
                   {getUserRole() === 'non-member' 
                     ? 'Public member directory' 
@@ -655,37 +702,59 @@ export default function ClubDetailPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {club.members.slice(0, getUserRole() === 'non-member' ? 4 : 8).map((member) => (
-                    <div key={member.user.id} className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-                      <Avatar>
-                        <AvatarImage src={member.user.image} />
-                        <AvatarFallback>{member.user.name.charAt(0)}</AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1">
-                        <p className="font-medium">{member.user.name}</p>
-                        {canViewMemberContent() ? (
-                          <>
-                            <p className="text-sm text-gray-600">
-                              {member.user.department} • {member.user.year}
-                            </p>
-                            <p className="text-xs text-gray-500">{member.user.email}</p>
-                          </>
-                        ) : (
-                          <p className="text-sm text-gray-600">{member.user.department}</p>
-                        )}
-                        <Badge variant="outline" className="text-xs mt-1">{member.role}</Badge>
+                <div className="space-y-4">
+                  {club.members.slice(0, getUserRole() === 'non-member' ? 4 : 12).map((member) => (
+                    <div key={member.user.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow bg-white">
+                      <div className="flex items-start space-x-4">
+                        <Avatar className="h-12 w-12">
+                          <AvatarImage src={member.user.image} />
+                          <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white font-semibold">
+                            {member.user.name.charAt(0)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between mb-2">
+                            <h3 className="font-semibold text-gray-900 truncate">{member.user.name}</h3>
+                            <Badge 
+                              variant={member.role === 'admin' ? 'default' : 'outline'} 
+                              className={`text-xs ${member.role === 'admin' ? 'bg-blue-600' : ''}`}
+                            >
+                              {member.role === 'admin' ? 'Lead' : member.role}
+                            </Badge>
+                          </div>
+                          
+                          <div className="space-y-2">
+                            <div className="flex items-center text-sm text-gray-800">
+                              <Mail className="h-4 w-4 mr-2 text-gray-500 flex-shrink-0" />
+                              <span className="font-medium text-gray-800">{member.user.email}</span>
+                            </div>
+                            {member.user.department && (
+                              <div className="flex items-center text-sm text-gray-600">
+                                <GraduationCap className="h-4 w-4 mr-2 text-gray-400" />
+                                <span>{member.user.department}</span>
+                                {member.user.year && <span className="ml-1">• {member.user.year}</span>}
+                              </div>
+                            )}
+                          </div>
+                        </div>
                       </div>
                     </div>
                   ))}
                 </div>
-                {club.members.length > (getUserRole() === 'non-member' ? 4 : 8) && (
-                  <p className="text-sm text-gray-500 mt-4 text-center">
-                    {getUserRole() === 'non-member' 
-                      ? `Join the club to see all ${club.members.length} members`
-                      : `And ${club.members.length - 8} more members...`
-                    }
-                  </p>
+                {club.members.length > (getUserRole() === 'non-member' ? 4 : 12) && (
+                  <div className="mt-6 text-center">
+                    <p className="text-sm text-gray-500 mb-3">
+                      {getUserRole() === 'non-member' 
+                        ? `Join the club to see all ${club.members.length} members`
+                        : `Showing ${getUserRole() === 'non-member' ? 4 : 12} of ${club.members.length} members`
+                      }
+                    </p>
+                    {canViewMemberContent() && (
+                      <Button variant="outline" size="sm">
+                        View All Members
+                      </Button>
+                    )}
+                  </div>
                 )}
               </CardContent>
             </Card>
@@ -694,21 +763,28 @@ export default function ClubDetailPage() {
           <div className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Club Owner</CardTitle>
+                <CardTitle className="flex items-center">
+                  <Star className="h-5 w-5 mr-2 text-yellow-500" />
+                  Club Owner
+                </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="flex items-center space-x-3">
-                  <Avatar>
-                    <AvatarImage src={club.owner.image} />
-                    <AvatarFallback>{club.owner.name.charAt(0)}</AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <p className="font-medium">{club.owner.name}</p>
-                    {canViewMemberContent() ? (
-                      <p className="text-sm text-gray-600">{club.owner.email}</p>
-                    ) : (
-                      <p className="text-sm text-gray-600">Club Leader</p>
-                    )}
+                <div className="border rounded-lg p-4 bg-gradient-to-r from-blue-50 to-purple-50">
+                  <div className="flex items-start space-x-4">
+                    <Avatar className="h-12 w-12">
+                      <AvatarImage src={club.owner.image} />
+                      <AvatarFallback className="bg-gradient-to-br from-yellow-500 to-orange-600 text-white font-semibold">
+                        {club.owner.name.charAt(0)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-gray-900 mb-1">{club.owner.name}</h3>
+                      <Badge className="bg-yellow-500 text-white mb-2 text-xs">Owner</Badge>
+                      <div className="flex items-center text-sm text-gray-800">
+                        <Mail className="h-4 w-4 mr-2 text-gray-500 flex-shrink-0" />
+                        <span className="font-medium text-gray-800">{club.owner.email}</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </CardContent>
@@ -765,6 +841,55 @@ export default function ClubDetailPage() {
                 ) : (
                   <p className="text-gray-500">No announcements yet</p>
                 )}
+              </CardContent>
+            </Card>
+
+            {/* AI Suggestions for Club Members and Leaders */}
+            {(isUserMember() || isClubOwner()) && (
+              <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300">
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <Wand2 className="h-5 w-5 mr-2 text-purple-500" />
+                    Club Activity Suggestions
+                  </CardTitle>
+                  <CardDescription>
+                    Get creative ideas for {club.name} activities and events.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <AiSuggestions />
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Feedback Section */}
+            <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300">
+              <CardHeader>
+                <div className="flex items-center gap-3">
+                  <div className="bg-blue-100 p-2 rounded-lg">
+                    <MessageSquare className="h-6 w-6 text-blue-600" />
+                  </div>
+                  <div>
+                    <CardTitle>Share Your Feedback</CardTitle>
+                    <CardDescription>
+                      Help us improve this club and the overall experience.
+                    </CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-gray-600 mb-4">
+                  Have suggestions about this club, its events, or general feedback? Your anonymous input helps us create a better experience for everyone.
+                </p>
+                <Dialog open={feedbackDialogOpen} onOpenChange={setFeedbackDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button className="w-full">
+                      <MessageSquare className="h-4 w-4 mr-2" />
+                      Submit Anonymous Feedback
+                    </Button>
+                  </DialogTrigger>
+                  <AnonymousComplaintBox setDialogOpen={setFeedbackDialogOpen} />
+                </Dialog>
               </CardContent>
             </Card>
           </div>

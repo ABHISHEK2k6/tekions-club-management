@@ -140,8 +140,11 @@ model Event {
   title           String
   description     String?
   date            DateTime
+  endDate         DateTime?
   venue           String
   maxParticipants Int?
+  category        String?
+  registrationLink String?
   isActive        Boolean  @default(true)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
