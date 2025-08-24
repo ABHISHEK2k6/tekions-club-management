@@ -23,7 +23,8 @@ import {
   MapPin,
   GraduationCap,
   MessageSquare,
-  Wand2
+  Wand2,
+  Loader2
 } from 'lucide-react';
 import AnonymousComplaintBox from '@/components/AnonymousComplaintBox';
 import AiSuggestions from '@/components/AiSuggestions';
@@ -107,6 +108,21 @@ export default function ClubDetailPage() {
       checkUserRequestStatus();
     }
   }, [params.id, session?.user?.id]);
+
+  // Refresh request status when the page becomes visible again
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden && session?.user?.id && params.id) {
+        // Small delay to ensure any pending operations are complete
+        setTimeout(() => {
+          checkUserRequestStatus();
+        }, 500);
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [session?.user?.id, params.id]);
 
   const fetchSheetData = async () => {
     try {
@@ -216,6 +232,11 @@ export default function ClubDetailPage() {
     }
   };
 
+  // Function to refresh request status (can be called from outside)
+  const refreshRequestStatus = async () => {
+    await checkUserRequestStatus();
+  };
+
   const isUserMember = () => {
     if (!club || !currentUserId) return false;
     return club.members.some(member => member.user.id === currentUserId);
@@ -223,11 +244,30 @@ export default function ClubDetailPage() {
 
   const isClubOwner = () => {
     if (!club || !currentUserId) return false;
-    return club.owner.id === currentUserId;
+    return club.owner.id === currentUserId || club.owner.email === session?.user?.email;
   };
 
   const getUserRole = () => {
     if (!club || !currentUserId) return 'non-member';
+    
+    // Debug logging
+    if (process.env.NODE_ENV === 'development') {
+      console.log('getUserRole debug:', {
+        currentUserId,
+        ownerId: club.owner.id,
+        ownerEmail: club.owner.email,
+        sessionEmail: session?.user?.email,
+        isOwnerById: club.owner.id === currentUserId,
+        isOwnerByEmail: club.owner.email === session?.user?.email
+      });
+    }
+    
+    // Check if user is the owner first (by ID or email)
+    if (club.owner.id === currentUserId || club.owner.email === session?.user?.email) {
+      return 'owner';
+    }
+    
+    // Then check if user is a member
     const member = club.members.find(member => member.user.id === currentUserId);
     return member ? member.role : 'non-member';
   };
@@ -336,12 +376,8 @@ export default function ClubDetailPage() {
 
   const handleMembershipRequest = async (requestId: string, action: 'approve' | 'reject') => {
     try {
-      const response = await fetch(`/api/clubs/${params.id}/requests/${requestId}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ action }),
+      const response = await fetch(`/api/clubs/${params.id}/requests/${requestId}/${action}`, {
+        method: 'POST',
       });
 
       if (!response.ok) {
@@ -425,7 +461,10 @@ export default function ClubDetailPage() {
                   <div className="flex items-center space-x-3 mb-2">
                     <Badge variant="secondary">{club.category}</Badge>
                     {getUserRole() === 'owner' && (
-                      <Badge variant="default" className="bg-blue-600">Owner</Badge>
+                      <Badge variant="default" className="bg-blue-600">
+                        <Star className="h-3 w-3 mr-1 fill-current" />
+                        Owner
+                      </Badge>
                     )}
                     {getUserRole() === 'member' && (
                       <Badge variant="outline">Member</Badge>
@@ -445,6 +484,21 @@ export default function ClubDetailPage() {
               </div>
 
               <div className="flex space-x-3">
+                
+                {getUserRole() === 'owner' && (
+                  <>
+                    <Button variant="outline" asChild>
+                      <Link href={`/clubs/${params.id}/manage`}>
+                        <Settings className="h-4 w-4 mr-2" />
+                        Manage Club
+                      </Link>
+                    </Button>
+                    <Button variant="default" disabled>
+                      <Star className="h-4 w-4 mr-2 fill-current" />
+                      Owner
+                    </Button>
+                  </>
+                )}
                 
                 {getUserRole() === 'member' && (
                   <>
@@ -703,43 +757,6 @@ export default function ClubDetailPage() {
               </div>
             )}
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Events</CardTitle>
-                <CardDescription>
-                  {getUserRole() === 'non-member' 
-                    ? 'Public events and activities' 
-                    : 'Complete event history and upcoming activities'
-                  }
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {club.events && club.events.length > 0 ? (
-                  <div className="space-y-4">
-                    {club.events.slice(0, getUserRole() === 'non-member' ? 3 : undefined).map((event, index) => (
-                      <div key={`club-detail-${event.id}-${index}`} className="flex items-center justify-between p-4 border rounded-lg">
-                        <div>
-                          <h4 className="font-medium">{event.title}</h4>
-                          <p className="text-sm text-gray-600">
-                            {event.venue} • {new Date(event.date).toLocaleDateString()}
-                          </p>
-                        </div>
-                        {canViewMemberContent() && (
-                          <Button variant="outline" size="sm">View Details</Button>
-                        )}
-                      </div>
-                    ))}
-                    {getUserRole() === 'non-member' && club.events.length > 3 && (
-                      <p className="text-sm text-gray-500 text-center">
-                        Join the club to see all {club.events.length} events
-                      </p>
-                    )}
-                  </div>
-                ) : (
-                  <p className="text-gray-500 text-center py-4">No events available</p>
-                )}
-              </CardContent>
-            </Card>
 
             <Card>
               <CardHeader>
