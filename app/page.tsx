@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { Button } from "@/components/ui/button";
 import Image from 'next/image';
 import { motion } from 'framer-motion';
+import MiniLoader from "@/components/ui/mini-loader";
 
 // Flying bird component with animation
 const FlyingBird = ({ 
@@ -59,7 +60,7 @@ export default function Home() {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary mx-auto"></div>
+          <MiniLoader size="lg" className="mx-auto" />
           <p className="mt-4 text-muted-foreground">Loading...</p>
         </div>
       </div>

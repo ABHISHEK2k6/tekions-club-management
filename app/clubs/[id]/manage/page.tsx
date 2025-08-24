@@ -28,10 +28,10 @@ import {
   UserMinus,
   UserPlus,
   AlertTriangle,
-  Check,
-  Loader2
+  Check
 } from 'lucide-react';
 import Link from 'next/link';
+import MiniLoader from '@/components/ui/mini-loader';
 
 interface Club {
   id: string;
@@ -316,7 +316,7 @@ export default function ManageClubPage() {
       <div className="min-h-screen bg-gray-50">
         <PortalNavbar />
         <div className="flex items-center justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin" />
+          <MiniLoader size="lg" />
         </div>
       </div>
     );
@@ -397,7 +397,7 @@ export default function ManageClubPage() {
                 <Button onClick={handleSaveChanges} disabled={saving}>
                   {saving ? (
                     <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      <MiniLoader size="sm" className="mr-2" />
                       Saving...
                     </>
                   ) : (
@@ -661,7 +661,7 @@ export default function ManageClubPage() {
                         <AlertDialogTrigger asChild>
                           <Button variant="destructive" disabled={deleteLoading}>
                             {deleteLoading ? (
-                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              <MiniLoader size="sm" className="mr-2" />
                             ) : (
                               <Trash2 className="h-4 w-4 mr-2" />
                             )}

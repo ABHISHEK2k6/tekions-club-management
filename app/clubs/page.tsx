@@ -6,6 +6,7 @@ import { redirect } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import Loader from '@/components/ui/loader';
 import PortalNavbar from '@/components/portal-navbar';
 import SelectionPanel from '@/components/ui/selection-panel';
 import { useToast } from '@/hooks/use-toast';
@@ -18,11 +19,11 @@ import {
   Calendar,
   UserPlus,
   Plus,
-  Settings,
-  Loader2
+  Settings
 } from 'lucide-react';
 import Link from 'next/link';
 import AiClubFinder from '@/components/AiClubFinder';
+import MiniLoader from '@/components/ui/mini-loader';
 
 interface Club {
   id: string;
@@ -189,17 +190,12 @@ const ClubsPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <PortalNavbar />
-      
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <Loader>
+      <div className="min-h-screen bg-background">
+        <PortalNavbar />
+        
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground">Tekions</h1>
-          <p className="text-muted-foreground mt-2">
-            Discover and join clubs that match your interests and passions.
-          </p>
-        </div>
 
         {/* AI Club Finder */}
         <AiClubFinder />
@@ -229,7 +225,7 @@ const ClubsPage = () => {
         {/* Loading state */}
         {loading ? (
           <div className="flex justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin" />
+            <MiniLoader size="lg" />
           </div>
         ) : (
           <>
@@ -267,7 +263,15 @@ const ClubsPage = () => {
                           )}
                         </div>
                         <div>
-                          <CardTitle className={`text-lg ${viewMode === 'list' ? 'text-center text-sm' : ''}`}>
+                          <CardTitle 
+                            className={`text-lg ${viewMode === 'list' ? 'text-center text-sm' : ''}`}
+                            style={{
+                              fontFamily: "'Press Start 2P', monospace",
+                              fontSize: viewMode === 'list' ? '0.7rem' : '0.9rem',
+                              letterSpacing: '0.1em',
+                              color: '#000000'
+                            }}
+                          >
                             {club.name}
                           </CardTitle>
                           <div className={`flex gap-2 mt-1 ${viewMode === 'list' ? 'justify-center flex-wrap' : ''}`}>
@@ -365,7 +369,17 @@ const ClubsPage = () => {
             {clubs.length === 0 && !loading && (
               <div className="text-center py-12">
                 <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-foreground mb-2">No clubs found</h3>
+                <h3 
+                  className="text-lg font-semibold mb-2"
+                  style={{
+                    fontFamily: "'Press Start 2P', monospace",
+                    fontSize: '0.9rem',
+                    letterSpacing: '0.1em',
+                    color: '#000000'
+                  }}
+                >
+                  No clubs found
+                </h3>
                 <p className="text-muted-foreground mb-4">
                   Try adjusting your search terms or filters to find clubs that match your interests.
                 </p>
@@ -378,6 +392,7 @@ const ClubsPage = () => {
         )}
       </div>
     </div>
+    </Loader>
   );
 };
 

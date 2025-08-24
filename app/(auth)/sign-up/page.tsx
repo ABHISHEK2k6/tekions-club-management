@@ -3,6 +3,7 @@
 import { motion } from 'framer-motion';
 import SignUpForm from "@/components/form/sign-up-form";
 import { useAuthRedirect } from "@/hooks/use-auth-redirect";
+import MiniLoader from "@/components/ui/mini-loader";
 
 const SignUpPage = () => {
   const { status } = useAuthRedirect();
@@ -11,7 +12,7 @@ const SignUpPage = () => {
   if (status === "loading") {
     return (
       <div className="w-full flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <MiniLoader size="md" />
       </div>
     );
   }

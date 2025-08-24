@@ -7,6 +7,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 import SignInForm from "@/components/form/sign-in-form";
 import { useAuthRedirect } from "@/hooks/use-auth-redirect";
+import MiniLoader from "@/components/ui/mini-loader";
 
 const SignInContent = () => {
   const { status } = useAuthRedirect();
@@ -17,7 +18,7 @@ const SignInContent = () => {
   if (status === "loading") {
     return (
       <div className="w-full flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <MiniLoader size="md" />
       </div>
     );
   }
@@ -87,7 +88,7 @@ const SignInPage = () => {
   return (
     <Suspense fallback={
       <div className="w-full flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <MiniLoader size="md" />
       </div>
     }>
       <SignInContent />

@@ -94,6 +94,15 @@ const DashboardPage = () => {
   }, [totalJoinedClubs]);
 
   useEffect(() => {
+    // Combined effect to determine when all data is loaded
+    const allDataLoaded = !eventsLoading && !clubsLoading && !announcementsLoading;
+    if (allDataLoaded) {
+      // Add small delay for smooth transition
+      setTimeout(() => setLoading(false), 500);
+    }
+  }, [eventsLoading, clubsLoading, announcementsLoading]);
+
+  useEffect(() => {
     // Use real announcements data from the hook
     if (!announcementsLoading && liveAnnouncements) {
       // Map API data to dashboard format and sort by date (most recent first)
@@ -111,7 +120,6 @@ const DashboardPage = () => {
         .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
       
       setAnnouncements(mappedAnnouncements);
-      setLoading(false);
     }
   }, [liveAnnouncements, announcementsLoading]);
 
@@ -150,6 +158,17 @@ const DashboardPage = () => {
     redirect('/sign-in');
   }
 
+  // Show loader until all data is loaded
+  if (loading || eventsLoading || clubsLoading || announcementsLoading) {
+    return (
+      <Loader>
+        <div className="min-h-screen bg-background">
+          <PortalNavbar />
+        </div>
+      </Loader>
+    );
+  }
+
   const formatTimeAgo = (dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();
@@ -173,11 +192,10 @@ const DashboardPage = () => {
   };
 
   return (
-    <Loader>
-      <div className="min-h-screen bg-background">
-        <PortalNavbar />
-        
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="min-h-screen bg-background">
+      <PortalNavbar />
+      
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {/* Welcome Header */}
           <div className="mb-8">
             <div className="flex items-center justify-between">
@@ -287,7 +305,7 @@ const DashboardPage = () => {
                       const isValidDate = !isNaN(eventDate.getTime());
                       
                       if (!isValidDate) {
-                        console.log(`Skipping event with invalid date: "${event.title}" - "${event.date}"`);
+                        console.log(`Skipping event with invalid date: ${event.title} - ${event.date}`);
                         return false;
                       }
                       
@@ -495,7 +513,7 @@ const DashboardPage = () => {
           </Card>
         </div>
       </div>
-    </Loader>
+    </div>
   );
 };
 

@@ -93,7 +93,7 @@ export default function AiClubFinder() {
             <Sparkles className="h-6 w-6 text-blue-600" />
           </div>
           <div>
-            <CardTitle>AI Club Finder</CardTitle>
+            <CardTitle className="mini-heading text-lg">AI Club Finder</CardTitle>
             <CardDescription>
               Tell us your interests, and our AI will analyze all clubs in our database to find your perfect match based on descriptions, categories, tags, and activities!
             </CardDescription>

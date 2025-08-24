@@ -19,13 +19,16 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${inter.className} bg-background text-foreground`}>
+      <head>
+        <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet" />
+      </head>
+      <body className={`${inter.className}`} style={{ background: '#111827', color: '#ffffff', margin: 0, padding: 0 }}>
         <Providers>
-          <div className="flex flex-col min-h-screen">
+          <div className="flex flex-col min-h-screen" style={{ background: '#111827', minHeight: '100vh' }}>
             {children}
           </div>
           <Toaster />
-          <SonnerToaster position="top-center" />
+          <SonnerToaster />
         </Providers>
       </body>
     </html>

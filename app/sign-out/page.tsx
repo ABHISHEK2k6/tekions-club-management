@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { LogOut } from "lucide-react";
 import Link from "next/link";
+import MiniLoader from "@/components/ui/mini-loader";
 
 export default function SignOutPage() {
   const { data: session, status } = useSession();
@@ -29,7 +30,7 @@ export default function SignOutPage() {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary mx-auto"></div>
+          <MiniLoader size="lg" className="mx-auto" />
           <p className="mt-4 text-muted-foreground">Loading...</p>
         </div>
       </div>

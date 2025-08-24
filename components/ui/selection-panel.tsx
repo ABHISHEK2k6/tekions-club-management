@@ -113,7 +113,7 @@ export default function SelectionPanel({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-foreground">{title}</h2>
+          <h2 className="text-lg font-semibold section-heading">{title}</h2>
           {(totalResults !== undefined || showingResults !== undefined) && (
             <p className="text-sm text-muted-foreground">
               {showingResults !== undefined && totalResults !== undefined 

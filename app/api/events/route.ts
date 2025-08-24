@@ -126,7 +126,6 @@ export async function POST(request: Request) {
         title,
         description: description || null,
         date: new Date(date),
-        endDate: endDate ? new Date(endDate) : null,
         venue,
         maxParticipants: maxParticipants ? parseInt(maxParticipants) : null,
         category: category || null,

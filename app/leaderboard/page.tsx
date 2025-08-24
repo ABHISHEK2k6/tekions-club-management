@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import Loader from '@/components/ui/loader';
 import PortalNavbar from '@/components/portal-navbar';
 import { 
   Trophy,
@@ -199,13 +200,16 @@ const LeaderboardPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <PortalNavbar />
-      
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <Loader>
+      <div className="min-h-screen bg-background">
+        <PortalNavbar />
+        
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground">Leaderboard</h1>
+          <h1 className="text-3xl font-bold page-title">
+            Leaderboard
+          </h1>
           <p className="text-muted-foreground mt-2">
             See how you rank among your peers and celebrate top performers.
           </p>
@@ -214,7 +218,7 @@ const LeaderboardPage = () => {
         {/* Current User Stats */}
         <Card className="mb-8 border-blue-200 bg-blue-50">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2 mini-heading text-lg">
               <Star className="h-5 w-5 text-blue-600" />
               Your Performance
             </CardTitle>
@@ -246,7 +250,7 @@ const LeaderboardPage = () => {
           <div className="lg:col-span-2">
             <Card>
               <CardHeader>
-                <CardTitle>Rankings</CardTitle>
+                <CardTitle className="mini-heading text-lg">Rankings</CardTitle>
                 <CardDescription>
                   Campus-wide rankings based on activity and engagement
                 </CardDescription>
@@ -347,7 +351,7 @@ const LeaderboardPage = () => {
             {/* Points System */}
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
+                <CardTitle className="flex items-center gap-2 mini-heading text-lg">
                   <Target className="h-5 w-5" />
                   Points System
                 </CardTitle>
@@ -373,7 +377,7 @@ const LeaderboardPage = () => {
             {/* Achievements */}
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
+                <CardTitle className="flex items-center gap-2 mini-heading text-lg">
                   <Award className="h-5 w-5" />
                   Your Achievements
                 </CardTitle>
@@ -390,7 +394,7 @@ const LeaderboardPage = () => {
             {/* Monthly Challenge */}
             <Card className="bg-gradient-to-br from-purple-50 to-blue-50 border-purple-200">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-purple-800">
+                <CardTitle className="flex items-center gap-2 text-purple-800 mini-heading text-lg">
                   <TrendingUp className="h-5 w-5" />
                   Monthly Challenge
                 </CardTitle>
@@ -410,6 +414,7 @@ const LeaderboardPage = () => {
         </div>
       </div>
     </div>
+    </Loader>
   );
 };
 

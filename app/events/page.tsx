@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import Loader from '@/components/ui/loader';
 import PortalNavbar from '@/components/portal-navbar';
 import { useEvents } from '@/hooks/use-events';
 import { 
@@ -22,6 +23,7 @@ import {
   Share
 } from 'lucide-react';
 import Link from 'next/link';
+import MiniLoader from '@/components/ui/mini-loader';
 
 interface Event {
   id: string;
@@ -78,7 +80,7 @@ const EventsPage = () => {
   if (status === 'loading') {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+        <MiniLoader size="lg" />
       </div>
     );
   }
@@ -88,13 +90,16 @@ const EventsPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <PortalNavbar />
-      
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <Loader>
+      <div className="min-h-screen bg-background">
+        <PortalNavbar />
+        
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground">Events</h1>
+          <h1 className="text-3xl font-bold page-title">
+            Events
+          </h1>
           <p className="text-muted-foreground mt-2">
             Discover exciting events and activities happening around campus.
           </p>
@@ -108,7 +113,15 @@ const EventsPage = () => {
                 ⚠️
               </div>
               <div className="flex-1">
-                <h3 className="font-semibold text-yellow-800 dark:text-yellow-200 mb-1">
+                <h3 
+                  className="font-semibold mb-1"
+                  style={{
+                    color: '#B45309',
+                    fontFamily: "'Press Start 2P', monospace",
+                    fontSize: '0.7rem',
+                    letterSpacing: '0.1em'
+                  }}
+                >
                   Demo Data Currently Displayed
                 </h3>
                 <p className="text-sm text-yellow-700 dark:text-yellow-300 mb-2">
@@ -200,7 +213,17 @@ const EventsPage = () => {
                             {event.category}
                           </Badge>
                         </div>
-                        <CardTitle className="text-lg line-clamp-2">{event.title}</CardTitle>
+                        <CardTitle 
+                          className="text-lg line-clamp-2"
+                          style={{
+                            fontFamily: "'Press Start 2P', monospace",
+                            fontSize: '0.8rem',
+                            letterSpacing: '0.1em',
+                            color: '#000000'
+                          }}
+                        >
+                          {event.title}
+                        </CardTitle>
                         <p className="text-sm text-muted-foreground">{event.clubName}</p>
                       </div>
                     </div>
@@ -263,7 +286,17 @@ const EventsPage = () => {
         ) : (
           <div className="text-center py-12">
             <Calendar className="h-16 w-16 text-muted-foreground mx-auto mb-4 opacity-50" />
-            <h3 className="text-lg font-semibold text-foreground mb-2">No events found</h3>
+            <h3 
+              className="text-lg font-semibold mb-2"
+              style={{
+                fontFamily: "'Press Start 2P', monospace",
+                fontSize: '0.9rem',
+                letterSpacing: '0.1em',
+                color: '#000000'
+              }}
+            >
+              No events found
+            </h3>
             <p className="text-muted-foreground mb-4">
               Try adjusting your search terms or filters to find events that match your interests.
             </p>
@@ -277,7 +310,15 @@ const EventsPage = () => {
         <div className="mt-12 text-center">
           <Card className="bg-muted border-border">
             <CardContent className="py-8">
-              <h3 className="text-xl font-semibold text-foreground mb-2">
+              <h3 
+                className="text-xl font-semibold mb-2"
+                style={{
+                  fontFamily: "'Press Start 2P', monospace",
+                  fontSize: '1rem',
+                  letterSpacing: '0.1em',
+                  color: '#000000'
+                }}
+              >
                 Want to organize an event?
               </h3>
               <p className="text-muted-foreground mb-4">
@@ -294,6 +335,7 @@ const EventsPage = () => {
         </div>
       </div>
     </div>
+    </Loader>
   );
 };
 

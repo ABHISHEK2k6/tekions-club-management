@@ -45,7 +45,7 @@ export default function AiClubFinder() {
       <CardHeader>
         <div className="flex items-center gap-3">
           <div className="bg-accent/10 p-2 rounded-lg">
-            <Sparkles className="h-6 w-6 text-accent" />
+            <Sparkles className="h-6 w-6 " />
           </div>
           <div>
             <CardTitle>AI Club Finder</CardTitle>

@@ -18,7 +18,6 @@ import {
   UserPlus,
   Share,
   Star,
-  Loader2,
   Mail,
   Phone,
   MapPin,
@@ -29,6 +28,7 @@ import {
 import AnonymousComplaintBox from '@/components/AnonymousComplaintBox';
 import AiSuggestions from '@/components/AiSuggestions';
 import { Dialog, DialogTrigger } from '@/components/ui/dialog';
+import MiniLoader from '@/components/ui/mini-loader';
 
 interface Club {
   id: string;
@@ -325,7 +325,7 @@ export default function ClubDetailPage() {
       <div className="min-h-screen bg-gray-50">
         <PortalNavbar />
         <div className="flex items-center justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin" />
+          <MiniLoader size="lg" />
         </div>
       </div>
     );
@@ -406,7 +406,7 @@ export default function ClubDetailPage() {
                     >
                       {isJoining ? (
                         <>
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          <MiniLoader size="sm" className="mr-2" />
                           Leaving...
                         </>
                       ) : (
@@ -425,7 +425,7 @@ export default function ClubDetailPage() {
                         className="bg-orange-50 border-orange-200 text-orange-600"
                       >
                         {checkingRequestStatus ? (
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          <MiniLoader size="sm" className="mr-2" />
                         ) : (
                           <>
                             <UserPlus className="h-4 w-4 mr-2" />
@@ -441,12 +441,12 @@ export default function ClubDetailPage() {
                       >
                         {isJoining ? (
                           <>
-                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            <MiniLoader size="sm" className="mr-2" />
                             Sending Request...
                           </>
                         ) : checkingRequestStatus ? (
                           <>
-                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            <MiniLoader size="sm" className="mr-2" />
                             Loading...
                           </>
                         ) : (
